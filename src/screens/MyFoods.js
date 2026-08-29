@@ -1,120 +1,136 @@
 import React, { Component } from 'react';
-// import Navbar from '../components/Navbar';
 import Navbar2 from '../components/Navbar2';
 import Footer from '../components/Footer';
-// import firebase from '../config/firebase';
 import { connect } from 'react-redux';
 import { my_foods } from '../store/action';
-
-import 'bootstrap/dist/css/bootstrap.css';
-import '../App.css'
-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-class MyFoods extends Component {
-    constructor() {
-        super()
-        this.state = {
-        }
+const SAMPLE_MY_FOODS = [
+    {
+        id: "sample-food-1",
+        itemTitle: "Gourmet Beef Truffle Burger",
+        itemIngredients: "Two prime patties, aged cheddar, caramelised onions, truffle aioli",
+        itemPrice: "650",
+        itemImageUrl: require("../assets/images/listing-logo03.png")
+    },
+    {
+        id: "sample-food-2",
+        itemTitle: "Smoky BBQ Wings Basket",
+        itemIngredients: "Crispy chicken wings glazed in house hickory BBQ sauce",
+        itemPrice: "480",
+        itemImageUrl: require("../assets/images/listing-logo15.png")
     }
+];
 
-    async componentDidMount() {
+class MyFoods extends Component {
+    componentDidMount() {
         this.props.my_foods();
     }
 
-    static getDerivedStateFromProps(props) {
-        const { user, myFoods } = props
-        return {
-            userDetails: user,
-            myFoods: myFoods,
-        }
-    }
-
-    _renderMyFoodsList() {
-        const { myFoods } = this.state;
-        if (myFoods) {
-            console.log(myFoods);
-            return Object.keys(myFoods).map((val) => {
-                return (
-                    <div className="container pt-4 pb-2 border-bottom" key={val}>
-                        <div className="row">
-                            <div className="col-lg-2 col-md-3 col-8 offset-2 offset-lg-0 offset-md-0 px-0 mb-3 text-center">
-                                <img style={{ width: "70px", height: "70px" }} alt="Natural Healthy Food" src={myFoods[val].itemImageUrl} />
-                            </div>
-                            <div className="col-lg-7 col-md-6 col-sm-12 px-0">
-                                <h6 className="">{myFoods[val].itemTitle}</h6>
-                                <p className="mb-1"><small>{myFoods[val].itemIngredients}</small></p>
-                            </div>
-                            <div className="col-lg-3 col-md-3 col-sm-12 px-0 text-right">
-                                <span className="mx-3"><b>RS.{myFoods[val].itemPrice}</b></span>
-                            </div>
-                        </div>
-                    </div>
-                )
-            })
-        }
-    }
-
     render() {
-        const { userDetails } = this.state;
-        // console.log(userDetails)
+        const { user, myFoods } = this.props;
+
+        let foodsList = [];
+        if (myFoods && Object.keys(myFoods).length > 0) {
+            foodsList = Object.keys(myFoods).map(key => ({ id: key, ...myFoods[key] }));
+        } else {
+            foodsList = SAMPLE_MY_FOODS;
+        }
+
+        const restaurantName = user && user.userName ? user.userName : "My Restaurant";
+        const typeOfFoodText = user && user.typeOfFood && Array.isArray(user.typeOfFood)
+            ? user.typeOfFood.join(', ')
+            : ((user && user.typeOfFood) || 'Multi-Cuisine');
+
         return (
-            <div>
-                <div className="container-fluid res-details-cont1">
-                    <div className="">
-                        {/* <Navbar history={this.props.history} /> */}
-                        <Navbar2 history={this.props.history} />
-                        <div className="container px-0 res-details-cont1-text mx-0">
-                            <div className="container">
-                                {
-                                    userDetails ? <div className="row">
-                                        <div className="col-lg-2 col-md-3 col-6 text-lg-center text-md-center pr-0 mb-2">
-                                            <img className="p-2 bg-white rounded text-center" alt="Natural Healthy Food" style={{ width: "60%" }} src={userDetails.userProfileImageUrl} />
-                                        </div>
-                                        <div className="col-lg-10 col-md-9 col-12 pl-lg-0 pl-md-0">
-                                            <h1 className="restaurant-title">{userDetails.userName}</h1>
-                                            <p className="restaurant-text">{userDetails.typeOfFood.join(', ')}</p>
-                                        </div>
-                                    </div> : null
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div style={{ background: "#EBEDF3" }} className="container-fluid py-5">
+            <div className="d-flex flex-column min-vh-100">
+                <Navbar2 history={this.props.history} />
+
+                {/* Subheader Banner */}
+                <section className="py-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#fff' }}>
                     <div className="container">
-                        <div className="row">
-                            <div className="col-lg-10 col-md-10 col-sm-12 offset-lg-1 offset-md-1">
-                                <div className="container">
-                                    < div className="row">
-                                        <div className="col-12 bg-white p-4">
-                                            <h4 className="text-center">My Food List</h4>
-                                            {this._renderMyFoodsList()}
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="row align-items-center">
+                            <div className="col-lg-8 col-12">
+                                <span className="hero-pill mb-2">
+                                    <FontAwesomeIcon icon="utensils" className="mr-2" style={{ color: 'var(--primary)' }} />
+                                    Menu Catalog
+                                </span>
+                                <h1 className="text-white font-weight-bold mb-1" style={{ fontSize: '2.2rem' }}>
+                                    {restaurantName} – Dishes
+                                </h1>
+                                <p className="text-muted mb-0">{typeOfFoodText}</p>
+                            </div>
+                            <div className="col-lg-4 col-12 text-lg-right mt-3 mt-lg-0">
+                                <button
+                                    type="button"
+                                    onClick={() => this.props.history.push('/add-menu-items')}
+                                    className="btn btn-warning px-4 py-2 font-weight-bold"
+                                >
+                                    <FontAwesomeIcon icon="plus" className="mr-2" />
+                                    Add New Dish
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
+
+                {/* Main Food List */}
+                <main className="py-5 flex-grow-1" style={{ background: 'var(--bg-page)' }}>
+                    <div className="container">
+                        <div className="row justify-content-center">
+                            <div className="col-lg-9 col-12">
+                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 className="font-weight-bold mb-0">Active Menu Dishes ({foodsList.length})</h4>
+                                </div>
+
+                                {foodsList.length === 0 ? (
+                                    <div className="bg-white rounded-lg p-5 text-center border">
+                                        <FontAwesomeIcon icon="utensils" className="text-muted mb-3" style={{ fontSize: '2.5rem', opacity: 0.4 }} />
+                                        <h5 className="font-weight-bold">No food items added yet</h5>
+                                        <p className="text-muted small mb-4">Start by adding your first signature dish to attract customers.</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => this.props.history.push('/add-menu-items')}
+                                            className="btn btn-warning px-4"
+                                        >
+                                            Add Your First Item
+                                        </button>
+                                    </div>
+                                ) : (
+                                    foodsList.map((food) => (
+                                        <div className="food-card" key={food.id}>
+                                            <img
+                                                alt={food.itemTitle}
+                                                src={food.itemImageUrl || require("../assets/images/listing-logo03.png")}
+                                                className="food-card-thumb"
+                                            />
+                                            <div className="food-card-info">
+                                                <h6 className="food-card-title">{food.itemTitle}</h6>
+                                                <p className="food-card-desc">{food.itemIngredients}</p>
+                                                <div className="food-card-price">RS. {food.itemPrice}</div>
+                                            </div>
+                                            <span className="badge-tag badge-tag-success">Available</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
                 <Footer />
-            </div >
+            </div>
         );
     }
 }
 
-const mapStateToProps = state => {
-    // console.log("mapStateToProps states =>> ", state);
-    return {
-        user: state.user,
-        myFoods: state.myFoods,
-    }
-}
+const mapStateToProps = state => ({
+    user: state.user,
+    myFoods: state.myFoods,
+});
 
-const mapDispatchToProps = dispatch => {
-    return {
-        my_foods: () => dispatch(my_foods()),
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    my_foods: () => dispatch(my_foods()),
+});
 
 export default connect(mapStateToProps, mapDispatchToProps)(MyFoods);

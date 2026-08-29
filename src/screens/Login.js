@@ -1,23 +1,21 @@
 import React, { Component } from 'react';
-// import Navbar from '../components/Navbar';
 import Navbar2 from '../components/Navbar2';
 import Footer from '../components/Footer';
-import {signUp, logIn} from '../config/firebase';
-
-import 'bootstrap/dist/css/bootstrap.css';
-import '../App.css'
+import { signUp, logIn } from '../config/firebase';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default class Login extends Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props);
         this.state = {
             isRegisterForm: false,
             registerFormError: "",
-            userProfileImageLable: "Choose image",
+            loginFormError: "",
+            userProfileImageLabel: "Choose image...",
             userName: "",
             userEmail: "",
             userPassword: "",
-            userConfirmPassword: false,
+            userConfirmPassword: "",
             userCity: "",
             userCountry: "",
             userGender: "Male",
@@ -25,398 +23,434 @@ export default class Login extends Component {
             userProfileImage: null,
             userTNC: false,
             showError: false,
+            showLoginError: false,
             userLoginEmail: "",
             userLoginPassword: "",
-        }
+            isLoading: false,
+        };
         this.handleForms = this.handleForms.bind(this);
-        this.handleUserName = this.handleUserName.bind(this);
-        this.handleUserEmail = this.handleUserEmail.bind(this);
-        this.handleUserPassword = this.handleUserPassword.bind(this);
-        this.handleUserConfirmPassword = this.handleUserConfirmPassword.bind(this);
-        this.handleUserCity = this.handleUserCity.bind(this);
-        this.handleUserCountry = this.handleUserCountry.bind(this);
-        this.handleUserAge = this.handleUserAge.bind(this);
         this.handleCreateAccountBtn = this.handleCreateAccountBtn.bind(this);
         this.handleUserProfileImage = this.handleUserProfileImage.bind(this);
-        this.handleUserTNC = this.handleUserTNC.bind(this);
-        this.handleUserGender = this.handleUserGender.bind(this);
         this.handleLoginNowBtn = this.handleLoginNowBtn.bind(this);
+        this.fillDemoCustomer = this.fillDemoCustomer.bind(this);
     }
 
     handleForms() {
-        const { isRegisterForm } = this.state;
-        if (isRegisterForm) {
-            this.setState({ isRegisterForm: false });
-        } else {
-            this.setState({ isRegisterForm: true });
-        }
+        this.setState(prevState => ({
+            isRegisterForm: !prevState.isRegisterForm,
+            showError: false,
+            showLoginError: false,
+            registerFormError: "",
+            loginFormError: "",
+        }));
     }
 
-    handleUserName(e) {
-        const userName = e;
-        const userNameFormate = /^([A-Za-z.\s_-]).{5,}$/;
-        if (userName.match(userNameFormate)) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userName: userName,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid name.",
-                userName: "",
-            });
-        }
-    }
-
-    handleUserEmail(e) {
-        const userEmail = e;
-        const userEmailFormate = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        if (userEmail.match(userEmailFormate)) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userEmail: userEmail,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid email address.",
-                userEmail: ""
-            });
-        }
-    }
-
-    handleUserPassword(e) {
-        const userPassword = e;
-        const userPasswordFormate = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{10,}/;
-        if (userPassword.match(userPasswordFormate)) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userPassword: userPassword,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Use alphanumeric, uppercase, lowercase & greater than 10 characters.",
-                userPassword: "",
-            });
-        }
-    }
-
-    handleUserConfirmPassword(e) {
-        const userConfirmPassword = e;
-        const { userPassword } = this.state;
-        if (userConfirmPassword.match(userPassword)) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userConfirmPassword: true,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Confirmation password not matched.",
-                userConfirmPassword: false,
-            });
-        }
-    }
-
-    handleUserCity(e) {
-        const userCity = e;
-        const userCityFormate = /^([A-Za-z.\s_-]).{5,}$/;
-        if (userCity.match(userCityFormate)) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userCity: userCity,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid city name.",
-                userCity: "",
-            });
-        }
-    }
-
-    handleUserCountry(e) {
-        const userCountry = e;
-        const userCountryFormate = /^([A-Za-z.\s_-]).{5,}$/;
-        if (userCountry.match(userCountryFormate)) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userCountry: userCountry,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid country name.",
-                userCountry: "",
-            });
-        }
-    }
-
-    handleUserGender(e) {
+    fillDemoCustomer() {
         this.setState({
-            userGender: e.target.value,
-        })
-    }
-
-    handleUserAge(e) {
-        const userAge = e;
-        if (userAge > 0 && userAge < 101) {
-            this.setState({
-                showError: false,
-                registerFormError: "",
-                userAge: userAge,
-            });
-        } else {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid age.",
-                userAge: "",
-            });
-        }
+            userLoginEmail: "customer@quickfood.demo",
+            userLoginPassword: "password123",
+            showLoginError: false,
+            loginFormError: ""
+        });
     }
 
     handleUserProfileImage(e) {
-        if (e.target.files[0] != null) {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
             this.setState({
                 showError: false,
                 registerFormError: "",
-                userProfileImageLable: e.target.files[0].name,
-                userProfileImage: e.target.files[0]
+                userProfileImageLabel: file.name,
+                userProfileImage: file
             });
         } else {
             this.setState({
-                showError: true,
-                registerFormError: "Please select a profile image.",
-                userProfileImageLable: "Choose image...",
-                userProfileImage: "",
+                userProfileImageLabel: "Choose image...",
+                userProfileImage: null,
             });
-        }
-    }
-
-    handleUserTNC() {
-        const { userTNC } = this.state
-        if (!userTNC) {
-            this.setState({
-                userTNC: true,
-                showError: false,
-                registerFormError: "",
-            })
-        } else {
-            this.setState({
-                userTNC: false,
-                showError: true,
-                registerFormError: "Please accept terms and conditions.",
-            })
         }
     }
 
     async handleCreateAccountBtn() {
         const { userName, userEmail, userPassword, userConfirmPassword, userCity, userCountry, userGender, userAge, userProfileImage, userTNC } = this.state;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        // const whiteSpaces = /^(?!\s*$)[-a-zA-Z0-9_:,.' ']{1,100}$/;
-        const userNameFormate = /^([A-Za-z.\s_-]).{5,}$/;
-        const userEmailFormate = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        const userPasswordFormate = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{10,}/;
-        const userCountryFormate = /^([A-Za-z.\s_-]).{5,}$/;
-        const userCityFormate = /^([A-Za-z.\s_-]).{5,}$/;
+        if (!userName || userName.trim().length < 2) {
+            this.setState({ showError: true, registerFormError: "Please enter your full name (at least 2 characters)." });
+            return;
+        }
+        if (!userEmail || !emailRegex.test(userEmail)) {
+            this.setState({ showError: true, registerFormError: "Please enter a valid email address." });
+            return;
+        }
+        if (!userPassword || userPassword.length < 6) {
+            this.setState({ showError: true, registerFormError: "Password must be at least 6 characters long." });
+            return;
+        }
+        if (userConfirmPassword !== userPassword) {
+            this.setState({ showError: true, registerFormError: "Passwords do not match." });
+            return;
+        }
+        if (!userCity || userCity.trim().length < 2) {
+            this.setState({ showError: true, registerFormError: "Please enter your city." });
+            return;
+        }
+        if (!userCountry || userCountry.trim().length < 2) {
+            this.setState({ showError: true, registerFormError: "Please enter your country." });
+            return;
+        }
+        if (!userAge || Number(userAge) <= 0) {
+            this.setState({ showError: true, registerFormError: "Please enter a valid age." });
+            return;
+        }
+        if (!userProfileImage) {
+            this.setState({ showError: true, registerFormError: "Please upload an avatar image." });
+            return;
+        }
+        if (!userTNC) {
+            this.setState({ showError: true, registerFormError: "You must accept terms & conditions to proceed." });
+            return;
+        }
 
-        if (!userName.match(userNameFormate)) {
+        this.setState({ isLoading: true, showError: false, registerFormError: "" });
+
+        const userDetails = {
+            userName: userName.trim(),
+            userEmail: userEmail.trim(),
+            userPassword,
+            userCity: userCity.trim(),
+            userCountry: userCountry.trim(),
+            userGender,
+            userAge,
+            userProfileImage,
+            isRestaurant: false,
+            propsHistory: this.props.history,
+            typeOfFood: [],
+        };
+
+        try {
+            await signUp(userDetails);
+        } catch (error) {
             this.setState({
+                isLoading: false,
                 showError: true,
-                registerFormError: "Please enter a valid name.",
+                registerFormError: (error && error.message) || error || "Registration failed. Please try again.",
             });
-        } else if (!userEmail.match(userEmailFormate)) {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid email address.",
-                userEmail: ""
-            });
-        } else if (!userPassword.match(userPasswordFormate)) {
-            this.setState({
-                showError: true,
-                registerFormError: "Use alphanumeric, uppercase, lowercase & greater than 10 characters.",
-                userPassword: "",
-            });
-        } else if (!userConfirmPassword) {
-            this.setState({
-                showError: true,
-                registerFormError: "Confirmation password not matched.",
-                userConfirmPassword: false,
-            });
-        } else if (!userCity.match(userCityFormate)) {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid city name.",
-                userCity: "",
-            });
-        } else if (!userCountry.match(userCountryFormate)) {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid country name.",
-                userCountry: "",
-            });
-        } else if (!(userAge > 0 && userAge < 101)) {
-            this.setState({
-                showError: true,
-                registerFormError: "Please enter a valid age.",
-                userAge: "",
-            });
-        } else if (userProfileImage == null) {
-            this.setState({
-                showError: true,
-                registerFormError: "Please select a profile image.",
-                userProfileImageLable: "Choose image...",
-                userProfileImage: "",
-            });
-        } else if (!userTNC) {
-            this.setState({
-                userTNC: false,
-                showError: true,
-                registerFormError: "Please accept terms and conditions.",
-            })
-        } else {
-            // console.log(userName, userEmail, userPassword, userConfirmPassword, userCity, userCountry, userGender, userAge, userProfileImage, userTNC)
-            const userDetails = {
-                userName: userName,
-                userEmail: userEmail,
-                userPassword: userPassword,
-                userCity: userCity,
-                userCountry: userCountry,
-                userGender: userGender,
-                userAge: userAge,
-                userProfileImage: userProfileImage,
-                isRestaurant: false,
-                propsHistory: this.props.history,
-                typeOfFood: [],
-            }
-            try {
-                const signUpReturn = await signUp(userDetails)
-                // console.log(signUpReturn)
-            }catch(error){
-                console.log("Error in Sign up => ",error)
-            }
         }
     }
 
-    async handleLoginNowBtn(){
+    async handleLoginNowBtn() {
         const { userLoginEmail, userLoginPassword } = this.state;
-        const userLoginDetails = {
-            userLoginEmail: userLoginEmail,
-            userLoginPassword: userLoginPassword,
-            propsHistory: this.props.history,
+        if (!userLoginEmail || !userLoginPassword) {
+            this.setState({
+                showLoginError: true,
+                loginFormError: "Please enter both your email address and password.",
+            });
+            return;
         }
+
+        this.setState({ isLoading: true, showLoginError: false, loginFormError: "" });
+
+        const userLoginDetails = {
+            userLoginEmail: userLoginEmail.trim(),
+            userLoginPassword,
+            propsHistory: this.props.history,
+        };
+
         try {
-            const LoginReturn = await logIn(userLoginDetails)
-            // console.log(LoginReturn)
-        }catch(error){
-            console.log("Error in Login => ",error)
+            await logIn(userLoginDetails);
+        } catch (error) {
+            this.setState({
+                isLoading: false,
+                showLoginError: true,
+                loginFormError: (error && error.message) || error || "Invalid email or password.",
+            });
         }
     }
 
     render() {
-        const { isRegisterForm, showError, registerFormError, userProfileImageLable, userTNC, userGender } = this.state;
+        const {
+            isRegisterForm,
+            showError,
+            registerFormError,
+            showLoginError,
+            loginFormError,
+            userProfileImageLabel,
+            userTNC,
+            userGender,
+            userName,
+            userEmail,
+            userPassword,
+            userConfirmPassword,
+            userCity,
+            userCountry,
+            userAge,
+            userLoginEmail,
+            userLoginPassword,
+            isLoading
+        } = this.state;
+
         return (
-            <div>
-                <div className="container-fluid register-cont1">
-                    <div className="">
-                        {/* <Navbar history={this.props.history} /> */}
-                        <Navbar2 history={this.props.history} />
-                        <div className="container register-cont1-text">
-                            <h1 className="text-uppercase text-white text-center mb-4"><strong>User Login / Register</strong></h1>
+            <div className="d-flex flex-column min-vh-100">
+                <Navbar2 history={this.props.history} />
+
+                {/* Subheader */}
+                <section className="py-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#fff' }}>
+                    <div className="container text-center">
+                        <span className="hero-pill mb-2">
+                            <FontAwesomeIcon icon="user-circle" className="mr-2" style={{ color: 'var(--primary)' }} />
+                            Customer Portal
+                        </span>
+                        <h1 className="text-white font-weight-bold mb-1" style={{ fontSize: '2.2rem' }}>
+                            {isRegisterForm ? "Create Customer Account" : "Sign In to Your Account"}
+                        </h1>
+                        <p className="text-muted mb-0">
+                            {isRegisterForm
+                                ? "Join QuickFood to order delicious food and track live deliveries in real-time."
+                                : "Welcome back! Access your order history and favorite restaurants."}
+                        </p>
+                    </div>
+                </section>
+
+                {/* Main Auth Form Area */}
+                <main className="py-5 flex-grow-1" style={{ background: 'var(--bg-page)' }}>
+                    <div className="container">
+                        <div className="row justify-content-center">
+                            <div className={isRegisterForm ? "col-lg-7 col-md-9 col-12" : "col-lg-5 col-md-7 col-12"}>
+                                <div className="bg-white rounded-lg p-4 p-md-5 border shadow-sm">
+                                    {/* Register Form */}
+                                    {isRegisterForm ? (
+                                        <form onSubmit={(e) => { e.preventDefault(); this.handleCreateAccountBtn(); }}>
+                                            <h4 className="font-weight-bold mb-4">Account Details</h4>
+
+                                            {showError && (
+                                                <div className="alert alert-danger py-2 small mb-3">
+                                                    <FontAwesomeIcon icon="exclamation-circle" className="mr-2" />
+                                                    {registerFormError}
+                                                </div>
+                                            )}
+
+                                            <div className="form-row">
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">FULL NAME</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        placeholder="John Doe"
+                                                        value={userName}
+                                                        onChange={(e) => this.setState({ userName: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">EMAIL ADDRESS</label>
+                                                    <input
+                                                        type="email"
+                                                        className="form-control"
+                                                        placeholder="john@example.com"
+                                                        value={userEmail}
+                                                        onChange={(e) => this.setState({ userEmail: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-row">
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">PASSWORD</label>
+                                                    <input
+                                                        type="password"
+                                                        className="form-control"
+                                                        placeholder="At least 6 characters"
+                                                        value={userPassword}
+                                                        onChange={(e) => this.setState({ userPassword: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">CONFIRM PASSWORD</label>
+                                                    <input
+                                                        type="password"
+                                                        className="form-control"
+                                                        placeholder="Re-enter password"
+                                                        value={userConfirmPassword}
+                                                        onChange={(e) => this.setState({ userConfirmPassword: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-row">
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">CITY</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        placeholder="e.g. New York"
+                                                        value={userCity}
+                                                        onChange={(e) => this.setState({ userCity: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">COUNTRY</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        placeholder="e.g. USA"
+                                                        value={userCountry}
+                                                        onChange={(e) => this.setState({ userCountry: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-row">
+                                                <div className="form-group col-md-4 mb-3">
+                                                    <label className="small font-weight-bold text-muted">GENDER</label>
+                                                    <select
+                                                        className="form-control"
+                                                        value={userGender}
+                                                        onChange={(e) => this.setState({ userGender: e.target.value })}
+                                                    >
+                                                        <option value="Male">Male</option>
+                                                        <option value="Female">Female</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                                <div className="form-group col-md-2 mb-3">
+                                                    <label className="small font-weight-bold text-muted">AGE</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        placeholder="24"
+                                                        value={userAge}
+                                                        onChange={(e) => this.setState({ userAge: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="form-group col-md-6 mb-3">
+                                                    <label className="small font-weight-bold text-muted">PROFILE AVATAR</label>
+                                                    <div className="custom-file">
+                                                        <input
+                                                            type="file"
+                                                            className="custom-file-input"
+                                                            id="avatarFile"
+                                                            accept="image/*"
+                                                            onChange={this.handleUserProfileImage}
+                                                        />
+                                                        <label className="custom-file-label text-truncate" htmlFor="avatarFile">
+                                                            {userProfileImageLabel}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="form-group mb-4">
+                                                <div className="custom-control custom-checkbox">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="custom-control-input"
+                                                        id="termsCheck"
+                                                        checked={userTNC}
+                                                        onChange={() => this.setState(prev => ({ userTNC: !prev.userTNC }))}
+                                                    />
+                                                    <label className="custom-control-label small" htmlFor="termsCheck">
+                                                        I agree to the Terms of Service &amp; Privacy Policy
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="btn btn-warning btn-block py-2 font-weight-bold text-uppercase"
+                                            >
+                                                {isLoading ? 'Creating Account...' : 'Create Account'}
+                                            </button>
+
+                                            <div className="text-center mt-4 small">
+                                                Already have an account?{' '}
+                                                <button
+                                                    type="button"
+                                                    onClick={this.handleForms}
+                                                    className="btn btn-link p-0 font-weight-bold text-warning"
+                                                >
+                                                    Sign In Here
+                                                </button>
+                                            </div>
+                                        </form>
+                                    ) : (
+                                        /* Login Form */
+                                        <form onSubmit={(e) => { e.preventDefault(); this.handleLoginNowBtn(); }}>
+                                            <h4 className="font-weight-bold mb-4">Customer Sign In</h4>
+
+                                            {showLoginError && (
+                                                <div className="alert alert-danger py-2 small mb-3">
+                                                    <FontAwesomeIcon icon="exclamation-circle" className="mr-2" />
+                                                    {loginFormError}
+                                                </div>
+                                            )}
+
+                                            <div className="form-group mb-3">
+                                                <label className="small font-weight-bold text-muted">EMAIL ADDRESS</label>
+                                                <input
+                                                    type="email"
+                                                    className="form-control"
+                                                    placeholder="Enter your email"
+                                                    value={userLoginEmail}
+                                                    onChange={(e) => this.setState({ userLoginEmail: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="form-group mb-4">
+                                                <label className="small font-weight-bold text-muted">PASSWORD</label>
+                                                <input
+                                                    type="password"
+                                                    className="form-control"
+                                                    placeholder="Enter password"
+                                                    value={userLoginPassword}
+                                                    onChange={(e) => this.setState({ userLoginPassword: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="btn btn-warning btn-block py-2 font-weight-bold text-uppercase mb-3"
+                                            >
+                                                {isLoading ? 'Signing in...' : 'Sign In'}
+                                            </button>
+
+                                            <div className="text-center mt-3 small">
+                                                Don't have an account?{' '}
+                                                <button
+                                                    type="button"
+                                                    onClick={this.handleForms}
+                                                    className="btn btn-link p-0 font-weight-bold text-warning"
+                                                >
+                                                    Create One Now
+                                                </button>
+                                            </div>
+
+                                            <hr className="my-3" />
+
+                                            <div className="text-center small text-muted">
+                                                Looking to manage a restaurant?{' '}
+                                                <a href="#/register-restaurant" className="font-weight-bold text-dark ml-1">
+                                                    Restaurant Portal
+                                                </a>
+                                            </div>
+                                        </form>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="container-fluid py-5 bg-light">
-                    {isRegisterForm ?
-                        <div className="col-lg-6 col-md-8 col-sm-12 mx-auto bg-white shadow p-4">
-                            <h2 className="text-center mb-4">Create an Account</h2>
-                            <form action="javascript:void(0)">
-                                <div className="form-row">
-                                    <div className="form-group col-md-6">
-                                        <label htmlFor="userFullName">Full Name</label>
-                                        <input type="text" className="form-control" id="userName" placeholder="Full Name" onKeyUp={(e) => this.handleUserName(e.target.value)} />
-                                    </div>
-                                    <div className="form-group col-md-6">
-                                        <label htmlFor="userEmail">Email</label>
-                                        <input type="email" className="form-control" id="userEmail" placeholder="Email" onKeyUp={(e) => this.handleUserEmail(e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group col-md-6">
-                                        <label htmlFor="userPassword">Password</label>
-                                        <input type="password" className="form-control" id="userPassword" placeholder="Password" onKeyUp={(e) => this.handleUserPassword(e.target.value)} />
-                                    </div>
-                                    <div className="form-group col-md-6">
-                                        <label htmlFor="userConfirmPassword">Confirm Password</label>
-                                        <input type="password" className="form-control" id="userConfirmPassword" placeholder="Password" onKeyUp={(e) => this.handleUserConfirmPassword(e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group col-md-6">
-                                        <label htmlFor="userCity">City</label>
-                                        <input type="text" className="form-control" id="userCity" onKeyUp={(e) => this.handleUserCity(e.target.value)} />
-                                    </div>
-                                    <div className="form-group col-md-6">
-                                        <label htmlFor="userCountry">Country</label>
-                                        <input type="text" className="form-control" id="userCountry" onKeyUp={(e) => this.handleUserCountry(e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group col-md-4">
-                                        <label htmlFor="userGender">Gender</label>
-                                        <select id="userGender" className="form-control" value={userGender} onChange={this.handleUserGender}>
-                                            <option defaultValue>Male</option>
-                                            <option>Female</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group col-md-2">
-                                        <label htmlFor="userAge">Age</label>
-                                        <input type="number" className="form-control" id="userAge" onKeyUp={(e) => this.handleUserAge(e.target.value)} />
-                                    </div>
-                                    <div className="form-group col-md-6">
-                                        <p className="mb-2">Profile Image</p>
-                                        <div className="custom-file">
-                                            <input type="file" className="custom-file-input" id="userProfileImage" onChange={this.handleUserProfileImage} />
-                                            <label className="custom-file-label" htmlFor="userProfileImage">{userProfileImageLable}</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <div className="custom-control custom-checkbox">
-                                        <input type="checkbox" className="custom-control-input" id="userTNC" defaultChecked={userTNC} onChange={this.handleUserTNC} />
-                                        <label className="custom-control-label" htmlFor="userTNC">Accept Terms and Conditions</label>
-                                    </div>
-                                </div>
-                                <p className="text-danger">{showError ? registerFormError : null}</p>
-                                <button type="submit" className="btn btn-warning text-uppercase mb-3" onClick={this.handleCreateAccountBtn}><b>Create an Account</b></button>
-                            </form>
-                            <p className="m-0">Already have an account? <span className="cursor-pointer text-warning" onClick={this.handleForms}>Login Here</span></p>
-                        </div> :
-                        <div className="col-lg-4 col-md-6 col-sm-12 mx-auto bg-white shadow p-4">
-                            <h2 className="text-center mb-4">Login Your Account</h2>
-                            <form action="javascript:void(0)">
-                                <div className="form-group">
-                                    <label htmlFor="userLoginEmail">Email</label>
-                                    <input type="email" className="form-control" id="userLoginEmail" placeholder="Email" onChange={(e) => this.setState({userLoginEmail: e.target.value})} />
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="userLoginPassword">Password</label>
-                                    <input type="password" className="form-control" id="userLoginPassword" placeholder="Password" onChange={(e) => this.setState({userLoginPassword: e.target.value})} />
-                                </div>
-                                <button type="submit" className="btn btn-warning text-uppercase mb-3" onClick={this.handleLoginNowBtn}><b>Login Now</b></button>
-                            </form>
-                            <p className="m-0">Don't have an account yet? <span className="cursor-pointer text-warning" onClick={this.handleForms}>Create an Account</span></p>
-                        </div>
-                    }
-                </div>
+                </main>
+
                 <Footer />
             </div>
         );

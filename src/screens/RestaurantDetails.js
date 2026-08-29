@@ -1,375 +1,586 @@
 import React, { Component } from 'react';
-// import Navbar from '../components/Navbar';
 import Navbar2 from '../components/Navbar2';
 import Footer from '../components/Footer';
 import firebase from '../config/firebase';
 import { connect } from 'react-redux';
 import { orderNow } from '../config/firebase';
-import Swal from 'sweetalert2'
-
-import 'bootstrap/dist/css/bootstrap.css';
-import '../App.css'
-
+import Swal from 'sweetalert2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
+const SAMPLE_MENU_ITEMS = [
+    {
+        id: "menu-sample-1",
+        itemTitle: "Signature Double Smash Burger",
+        itemIngredients: "Two 100% prime beef patties, aged cheddar, caramelized onions, house truffle aioli on brioche.",
+        itemPrice: "650",
+        itemImageUrl: require("../assets/images/listing-logo03.png"),
+        category: "Burgers"
+    },
+    {
+        id: "menu-sample-2",
+        itemTitle: "Truffle & Wild Mushroom Pizza",
+        itemIngredients: "Slow-fermented sourdough crust, buffalo mozzarella, wild mushrooms, fresh thyme, truffle glaze.",
+        itemPrice: "980",
+        itemImageUrl: require("../assets/images/listing-logo09.png"),
+        category: "Pizza"
+    },
+    {
+        id: "menu-sample-3",
+        itemTitle: "Crispy Peri Peri Chicken Roast",
+        itemIngredients: "Half flame-grilled chicken marinated in citrus peri-peri, served with garlic dip and herb rice.",
+        itemPrice: "790",
+        itemImageUrl: require("../assets/images/listing-logo15.png"),
+        category: "Chicken"
+    },
+    {
+        id: "menu-sample-4",
+        itemTitle: "Artisan Iced Caramel Cold Brew",
+        itemIngredients: "Single-origin slow steep cold brew, silky whole milk, salted caramel drizzle, crushed ice.",
+        itemPrice: "340",
+        itemImageUrl: require("../assets/images/listing-logo12.png"),
+        category: "Beverages"
+    }
+];
+
 class RestaurantDetails extends Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props);
         this.state = {
-            tab1: "col-12 col-lg-4 col-md-4 text-center res-details-tab-active",
-            tab2: "col-12 col-lg-4 col-md-4 text-center",
-            tab3: "col-12 col-lg-4 col-md-4 text-center",
-            tab1Content: true,
-            tab2Content: false,
-            tab3Content: false,
+            activeTab: 'menu',
+            menuItemsList: [],
             cartItemsList: [],
             totalPrice: 0,
-            showCartList: false,
-        }
+            searchMenuQuery: "",
+            selectedCategory: "All",
+            promoCode: "",
+            discountAmount: 0,
+            promoApplied: false,
+            deliveryFee: 100,
+            specialNotes: "",
+        };
+        this.fetchMenuItems = this.fetchMenuItems.bind(this);
+        this.addToCart = this.addToCart.bind(this);
+        this.removeCartItem = this.removeCartItem.bind(this);
+        this.applyPromoCode = this.applyPromoCode.bind(this);
+        this.handleConfirmOrderBtn = this.handleConfirmOrderBtn.bind(this);
     }
 
-    async componentDidMount() {
-        const { state } = await this.props.location
-        this.fetchMenuItems()
+    componentDidMount() {
+        const state = this.props.location && this.props.location.state;
         if (state) {
-            this.setState({
-                resDetails: state,
-            })
+            this.setState({ resDetails: state }, () => {
+                this.fetchMenuItems();
+            });
         } else {
-            this.props.history.push('/restaurants')
+            this.props.history.push('/restaurants');
         }
     }
 
-    static getDerivedStateFromProps(props) {
-        const { state } = props.location;
-        const { user } = props
+    static getDerivedStateFromProps(props, state) {
+        const locationState = props.location && props.location.state;
         return {
-            resDetails: state,
-            userDetails: user,
-        }
-    }
-
-    handleTabs(e) {
-        if (e === "tab1") {
-            this.setState({
-                tab1: "col-12 col-lg-4 col-md-4 text-center res-details-tab-active",
-                tab2: "col-12 col-lg-4 col-md-4 text-center",
-                tab3: "col-12 col-lg-4 col-md-4 text-center",
-                tab1Content: true,
-                tab2Content: false,
-                tab3Content: false,
-            })
-        } else if (e === "tab2") {
-            this.setState({
-                tab1: "col-12 col-lg-4 col-md-4 text-center",
-                tab2: "col-12 col-lg-4 col-md-4 text-center res-details-tab-active",
-                tab3: "col-12 col-lg-4 col-md-4 text-center",
-                tab1Content: false,
-                tab2Content: true,
-                tab3Content: false,
-            })
-        } else if (e === "tab3") {
-            this.setState({
-                tab1: "col-12 col-lg-4 col-md-4 text-center",
-                tab2: "col-12 col-lg-4 col-md-4 text-center",
-                tab3: "col-12 col-lg-4 col-md-4 text-center res-details-tab-active",
-                tab1Content: false,
-                tab2Content: false,
-                tab3Content: true,
-            })
-        }
+            resDetails: locationState || state.resDetails,
+            userDetails: props.user,
+        };
     }
 
     fetchMenuItems() {
         const { resDetails } = this.state;
-        firebase.firestore().collection('users').doc(resDetails.id).collection("menuItems").onSnapshot(snapshot => {
-            const menuItemsList = [];
-            snapshot.forEach(doc => {
-                const obj = { id: doc.id, ...doc.data() }
-                menuItemsList.push(obj)
-            })
-            this.setState({
-                menuItemsList: menuItemsList,
-            })
-        })
+        if (!resDetails || !resDetails.id) return;
+
+        // If it's a demo restaurant ID, use sample items
+        if (String(resDetails.id).startsWith("demo-res")) {
+            this.setState({ menuItemsList: SAMPLE_MENU_ITEMS });
+            return;
+        }
+
+        try {
+            firebase.firestore().collection('users').doc(resDetails.id).collection("menuItems").onSnapshot(snapshot => {
+                const list = [];
+                snapshot.forEach(doc => {
+                    list.push({ id: doc.id, ...doc.data() });
+                });
+                this.setState({
+                    menuItemsList: list.length > 0 ? list : SAMPLE_MENU_ITEMS
+                });
+            }, () => {
+                this.setState({ menuItemsList: SAMPLE_MENU_ITEMS });
+            });
+        } catch (e) {
+            this.setState({ menuItemsList: SAMPLE_MENU_ITEMS });
+        }
     }
 
     addToCart(item) {
-        const { cartItemsList, totalPrice } = this.state
-        if (item) {
-            cartItemsList.push(item);
-            this.setState({
-                totalPrice: totalPrice + Number(item.itemPrice),
-                cartItemsList: cartItemsList,
-                showCartList: true,
-            })
-        }
+        if (!item) return;
+        this.setState(prevState => {
+            const updatedCart = [...prevState.cartItemsList, item];
+            const updatedTotal = prevState.totalPrice + Number(item.itemPrice || 0);
+            return {
+                cartItemsList: updatedCart,
+                totalPrice: updatedTotal
+            };
+        });
     }
 
-    removeCartItem(itemIndex) {
-        const { cartItemsList, totalPrice } = this.state
-        const removedItemPrice = Number(cartItemsList[itemIndex].itemPrice)
-        cartItemsList.splice(itemIndex, 1);
-        this.setState({
-            totalPrice: totalPrice - removedItemPrice,
-            cartItemsList: cartItemsList,
-        })
+    removeCartItem(index) {
+        this.setState(prevState => {
+            const target = prevState.cartItemsList[index];
+            const updatedCart = [...prevState.cartItemsList];
+            updatedCart.splice(index, 1);
+            const updatedTotal = Math.max(0, prevState.totalPrice - Number(target ? target.itemPrice : 0));
+            return {
+                cartItemsList: updatedCart,
+                totalPrice: updatedTotal
+            };
+        });
+    }
+
+    applyPromoCode(e) {
+        e.preventDefault();
+        const { promoCode, totalPrice } = this.state;
+        const code = promoCode.trim().toUpperCase();
+
+        if (code === "QUICKFOOD20") {
+            const discount = Math.round(totalPrice * 0.20);
+            this.setState({
+                discountAmount: discount,
+                promoApplied: true
+            });
+            Swal.fire({
+                title: 'Coupon Applied!',
+                text: '20% discount has been applied to your order subtotal.',
+                type: 'success'
+            });
+        } else if (code === "FREESHIP") {
+            this.setState({
+                deliveryFee: 0,
+                promoApplied: true
+            });
+            Swal.fire({
+                title: 'Free Delivery Applied!',
+                text: 'Standard delivery fee has been waived.',
+                type: 'success'
+            });
+        } else {
+            Swal.fire({
+                title: 'Invalid Coupon',
+                text: 'Use code QUICKFOOD20 (20% off) or FREESHIP (Free Delivery).',
+                type: 'warning'
+            });
+        }
     }
 
     async handleConfirmOrderBtn() {
-        const { cartItemsList, totalPrice, resDetails, userDetails } = this.state;
-        console.log(cartItemsList.length)
-        if (userDetails) {
-            if (!userDetails.isRestaurant) {
-                if (cartItemsList.length > 0) {
-                    try {
-                        const history = this.props.history;
-                        const orderNowReturn = await orderNow(cartItemsList, totalPrice, resDetails, userDetails, history)
-                        console.log(orderNowReturn)
-                        // console.log("Successfully Ordered")
-                        Swal.fire({
-                            title: 'Success',
-                            text: 'Successfully Ordered',
-                            type: 'success',
-                        }).then(() => {
-                            history.push("/my-orders");
-                        })
-                    } catch (error) {
-                        // console.log(" Error in confirm order => ", error)
-                        Swal.fire({
-                            title: 'Error',
-                            text: error,
-                            type: 'error',
-                        })
-                    }
-                } else {
-                    console.log("You have to select atleast one item")
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'You have to select atleast one item',
-                        type: 'error',
-                    })
-                }
-            } else {
-                // console.log("You are not able to order")
-                Swal.fire({
-                    title: 'Error',
-                    text: 'You are not able to order',
-                    type: 'error',
-                })
-            }
-        } else {
-            // console.log("You must be Loged In")
+        const { cartItemsList, totalPrice, discountAmount, deliveryFee, resDetails, userDetails } = this.state;
+        const history = this.props.history;
+
+        if (!userDetails || !userDetails.isLogin) {
             Swal.fire({
-                title: 'Error',
-                text: 'You must be Loged In',
-                type: 'error',
+                title: 'Sign In Required',
+                text: 'Please sign in to place and track your food order.',
+                type: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Go to Sign In',
+            }).then((result) => {
+                if (result.value) {
+                    history.push('/login');
+                }
+            });
+            return;
+        }
+
+        if (userDetails.isRestaurant) {
+            Swal.fire({
+                title: 'Restaurant Account',
+                text: 'Restaurant accounts cannot place customer orders. Please sign in with a customer account.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        if (cartItemsList.length === 0) {
+            Swal.fire({
+                title: 'Basket is Empty',
+                text: 'Please add at least one delicious food item to your cart before proceeding.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        const netTotal = Math.max(0, totalPrice - discountAmount) + (totalPrice > 1000 ? 0 : deliveryFee);
+
+        try {
+            await orderNow(cartItemsList, netTotal, resDetails, userDetails, history);
+            Swal.fire({
+                title: 'Order Placed Successfully!',
+                text: 'The restaurant is preparing your meal. Track live updates in My Orders.',
+                type: 'success'
             }).then(() => {
-                this.props.history.push('/login')
-            })
-        }
-    }
-
-    _renderMenuItemsList() {
-        const { menuItemsList } = this.state;
-        if (menuItemsList) {
-            return Object.keys(menuItemsList).map((val) => {
-                return (
-                    <div className="container border-bottom pb-2 px-lg-0 px-md-0 mb-4" key={menuItemsList[val].id}>
-                        <div className="row">
-                            <div className="col-lg-2 col-md-3 col-8 offset-2 offset-lg-0 offset-md-0 px-0 mb-3 text-center">
-                                <img style={{ width: "70px", height: "70px" }} alt="Natural Healthy Food" src={menuItemsList[val].itemImageUrl} />
-                            </div>
-                            <div className="col-lg-7 col-md-6 col-sm-12 px-0">
-                                <h6 className="">{menuItemsList[val].itemTitle}</h6>
-                                <p className=""><small>{menuItemsList[val].itemIngredients}</small></p>
-                            </div>
-                            <div className="col-lg-3 col-md-3 col-sm-12 px-0 text-center">
-                                <span className="mx-3">RS.{menuItemsList[val].itemPrice}</span>
-                                <span className="menuItemsListAddBtn" onClick={() => this.addToCart(menuItemsList[val])} ><FontAwesomeIcon icon="plus" className="text-warning" /></span>
-                            </div>
-                        </div>
-                    </div>
-                )
-            })
-        }
-    }
-
-    _renderCartItemsList() {
-        const { cartItemsList } = this.state
-        if (cartItemsList) {
-            return Object.keys(cartItemsList).map((val) => {
-                return (
-                    <li className="food-item border-bottom pb-2 mb-3" key={val}>
-                        <div className="row">
-                            <div className="col-8 pr-0">
-                                <p className="mb-0">{cartItemsList[val].itemTitle}</p>
-                            </div>
-                            <div className="col-4 pl-0 text-right">
-                                <p className="mb-0"><span className="food-price">RS.{cartItemsList[val].itemPrice}</span><span onClick={() => this.removeCartItem(val)} className="remove-food-item"><FontAwesomeIcon icon="times" /></span></p>
-                            </div>
-                        </div>
-                    </li>
-                )
-            })
+                history.push('/my-orders');
+            });
+        } catch (error) {
+            Swal.fire({
+                title: 'Unable to Place Order',
+                text: error ? String(error) : 'Please check your connection and try again.',
+                type: 'error'
+            });
         }
     }
 
     render() {
-        const { tab1, tab2, tab3, tab1Content, tab2Content, tab3Content, resDetails, totalPrice, cartItemsList, showCartList } = this.state;
+        const {
+            activeTab,
+            resDetails,
+            menuItemsList,
+            cartItemsList,
+            totalPrice,
+            discountAmount,
+            deliveryFee,
+            promoCode,
+            searchMenuQuery,
+            selectedCategory
+        } = this.state;
+
+        if (!resDetails) {
+            return (
+                <div className="d-flex flex-column min-vh-100">
+                    <Navbar2 history={this.props.history} />
+                    <div className="container py-5 text-center my-auto">
+                        <p className="text-muted">Loading restaurant details...</p>
+                    </div>
+                    <Footer />
+                </div>
+            );
+        }
+
+        const typeOfFoodText = resDetails.typeOfFood && Array.isArray(resDetails.typeOfFood)
+            ? resDetails.typeOfFood.join(', ')
+            : (resDetails.typeOfFood || 'Multi-Cuisine');
+
+        const activeDeliveryFee = totalPrice > 1000 ? 0 : deliveryFee;
+        const finalNetTotal = Math.max(0, totalPrice - discountAmount) + (cartItemsList.length > 0 ? activeDeliveryFee : 0);
+
+        // Filter menu items by search and category
+        const displayItems = menuItemsList.filter(item => {
+            const matchesQuery = !searchMenuQuery.trim() ||
+                (item.itemTitle && item.itemTitle.toLowerCase().includes(searchMenuQuery.toLowerCase())) ||
+                (item.itemIngredients && item.itemIngredients.toLowerCase().includes(searchMenuQuery.toLowerCase()));
+            const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+            return matchesQuery && matchesCategory;
+        });
+
+        const categories = ["All", "Burgers", "Pizza", "Chicken", "Beverages"];
+
         return (
-            <div>
-                <div className="container-fluid res-details-cont1">
-                    <div className="">
-                        {/* <Navbar history={this.props.history} /> */}
-                        <Navbar2 history={this.props.history} />
-                        <div className="container px-0 res-details-cont1-text mx-0">
-                            <div className="container">
-                                <div className="row">
-                                    <div className="col-lg-2 col-md-3 col-6 text-lg-center text-md-center pr-0 mb-2">
-                                        <img className="p-2 bg-white rounded text-center" alt="Natural Healthy Food" style={{ width: "60%" }} src={resDetails.userProfileImageUrl} />
-                                    </div>
-                                    <div className="col-lg-10 col-md-9 col-12 pl-lg-0 pl-md-0">
-                                        <h1 className="restaurant-title">{resDetails.userName}</h1>
-                                        <p className="restaurant-text">{resDetails.typeOfFood.join(', ')}</p>
-                                    </div>
+            <div className="d-flex flex-column min-vh-100">
+                <Navbar2 history={this.props.history} />
+
+                {/* Restaurant Banner Header */}
+                <section className="py-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#fff' }}>
+                    <div className="container">
+                        <div className="row align-items-center">
+                            <div className="col-lg-2 col-md-3 col-12 text-center text-md-left mb-3 mb-md-0">
+                                <img
+                                    className="p-2 bg-white rounded shadow-sm"
+                                    alt={resDetails.userName}
+                                    style={{ width: "110px", height: "110px", objectFit: "contain" }}
+                                    src={resDetails.userProfileImageUrl || require("../assets/images/listing-logo03.png")}
+                                />
+                            </div>
+                            <div className="col-lg-7 col-md-6 col-12 text-center text-md-left">
+                                <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
+                                    <span className="badge-tag badge-tag-primary">Open Now</span>
+                                    <span className="badge-tag badge-tag-success">Verified Kitchen</span>
+                                </div>
+                                <h1 className="text-white font-weight-bold mb-1" style={{ fontSize: '2.2rem' }}>
+                                    {resDetails.userName}
+                                </h1>
+                                <p className="text-muted mb-2">{typeOfFoodText}</p>
+                                <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-3" style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
+                                    <span className="mr-3">
+                                        <FontAwesomeIcon icon="star" className="text-warning mr-1" />
+                                        <b>{resDetails.rating || '4.9'}</b> (120+ reviews)
+                                    </span>
+                                    <span className="mr-3">
+                                        <FontAwesomeIcon icon="clock" className="text-primary mr-1" />
+                                        20-30 min
+                                    </span>
+                                    <span>
+                                        <FontAwesomeIcon icon="map-marker-alt" className="text-danger mr-1" />
+                                        1.5 km away
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="col-lg-3 col-md-3 col-12 text-center text-md-right mt-3 mt-md-0">
+                                <div className="p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
+                                    <div className="small text-muted mb-1">Coupon Promo</div>
+                                    <div className="font-weight-bold text-warning" style={{ fontSize: '1.1rem' }}>QUICKFOOD20</div>
+                                    <div className="small text-muted">Use for 20% off subtotal</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div style={{ background: "#EBEDF3" }} className="container-fluid py-5">
+                </section>
+
+                {/* Main Content Area */}
+                <main className="py-5 flex-grow-1" style={{ background: 'var(--bg-page)' }}>
                     <div className="container">
                         <div className="row">
-                            <div className="col-lg-2 col-md-2 col-sm-12">
-                                <div className="listing-category">
-                                    <div className="category-heading py-0 mb-1">
-                                        <h6 className="m-0"><FontAwesomeIcon icon="utensils" className="mr-2" />Categories</h6>
-                                    </div>
-                                    <div>
-                                        <ul className="category-list">
-                                            <li>
-                                                <p>Kebabs</p>
-                                            </li>
-                                            <li>
-                                                <p>Chicken</p>
-                                            </li>
-                                            <li>
-                                                <p>Burgers</p>
-                                            </li>
-                                            <li>
-                                                <p>Biryani</p>
-                                            </li>
-                                            <li>
-                                                <p>Sauces</p>
-                                            </li>
-                                            <li>
-                                                <p>Vegatable Dishes</p>
-                                            </li>
-                                            <li>
-                                                <p>Garlic Bread</p>
-                                            </li>
-                                            <li>
-                                                <p>Specials</p>
-                                            </li>
-                                        </ul>
-                                    </div>
+                            {/* Left Main Section (Tabs, Menu, Reviews) */}
+                            <section className="col-lg-8 col-12 mb-4">
+                                {/* Navigation Tabs */}
+                                <div className="bg-white rounded-lg p-2 mb-4 d-flex border shadow-sm" style={{ gap: '8px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => this.setState({ activeTab: 'menu' })}
+                                        className={`btn flex-fill font-weight-bold ${activeTab === 'menu' ? 'btn-warning text-white' : 'btn-light text-muted'}`}
+                                    >
+                                        <FontAwesomeIcon icon="concierge-bell" className="mr-2" />
+                                        Menu
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => this.setState({ activeTab: 'reviews' })}
+                                        className={`btn flex-fill font-weight-bold ${activeTab === 'reviews' ? 'btn-warning text-white' : 'btn-light text-muted'}`}
+                                    >
+                                        <FontAwesomeIcon icon="comment-alt" className="mr-2" />
+                                        Reviews (4.9)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => this.setState({ activeTab: 'info' })}
+                                        className={`btn flex-fill font-weight-bold ${activeTab === 'info' ? 'btn-warning text-white' : 'btn-light text-muted'}`}
+                                    >
+                                        <FontAwesomeIcon icon="info-circle" className="mr-2" />
+                                        Info & Hours
+                                    </button>
                                 </div>
-                            </div>
-                            <div className="col-lg-7 col-md-7 col-sm-12">
-                                <div className="container">
-                                    <div className="row">
-                                        <div className={tab1} onClick={() => this.handleTabs("tab1")}>
-                                            <p className="res-details-tab-text"><FontAwesomeIcon icon="concierge-bell" className="mr-3" />Menu</p>
+
+                                {activeTab === 'menu' && (
+                                    <div>
+                                        {/* Category Pills & Search */}
+                                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-4">
+                                            <div className="d-flex flex-wrap gap-2 mb-2 mb-sm-0">
+                                                {categories.map((cat, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => this.setState({ selectedCategory: cat })}
+                                                        className={`btn btn-sm px-3 mr-2 mb-1 ${selectedCategory === cat ? 'btn-warning' : 'btn-outline-secondary'}`}
+                                                        style={{ borderRadius: 'var(--radius-full)' }}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="position-relative" style={{ minWidth: '200px' }}>
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-sm"
+                                                    placeholder="Search dish..."
+                                                    value={searchMenuQuery}
+                                                    onChange={(e) => this.setState({ searchMenuQuery: e.target.value })}
+                                                    style={{ borderRadius: 'var(--radius-sm)' }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className={tab2} onClick={() => this.handleTabs("tab2")}>
-                                            <p className="res-details-tab-text"><FontAwesomeIcon icon="comment-alt" className="mr-3" />Reviews</p>
-                                        </div>
-                                        <div className={tab3} onClick={() => this.handleTabs("tab3")}>
-                                            <p className="res-details-tab-text"><FontAwesomeIcon icon="info-circle" className="mr-3" />Restaurant Info</p>
-                                        </div>
-                                    </div>
-                                    {tab1Content &&
-                                        < div className="row menu-section">
-                                            <div className="col-12 bg-white p-4">
-                                                <div className="input-group input-group-sm mb-4 mt-2">
-                                                    <input type="text" className="form-control search-menu-input" htmlFor="search-menu" placeholder="Search food item" />
-                                                    <div className="input-group-append">
-                                                        <span className="input-group-text search-menu-text" id="search-menu"><FontAwesomeIcon icon="search" /></span>
+
+                                        {/* Food Items List */}
+                                        {displayItems.length === 0 ? (
+                                            <div className="bg-white p-5 text-center rounded border">
+                                                <p className="text-muted mb-0">No dishes match your search criteria.</p>
+                                            </div>
+                                        ) : (
+                                            displayItems.map((item) => (
+                                                <div className="food-card" key={item.id}>
+                                                    <img
+                                                        alt={item.itemTitle}
+                                                        src={item.itemImageUrl || require("../assets/images/listing-logo03.png")}
+                                                        className="food-card-thumb"
+                                                    />
+                                                    <div className="food-card-info">
+                                                        <h6 className="food-card-title">{item.itemTitle}</h6>
+                                                        <p className="food-card-desc">{item.itemIngredients}</p>
+                                                        <div className="food-card-price">RS. {item.itemPrice}</div>
                                                     </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => this.addToCart(item)}
+                                                        className="btn-add-food"
+                                                    >
+                                                        <FontAwesomeIcon icon="plus" />
+                                                        <span>Add</span>
+                                                    </button>
                                                 </div>
-                                                <div>
-                                                    <h6 className="mb-4 text-warning">Best food items:</h6>
-                                                    {this._renderMenuItemsList()}
-                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'reviews' && (
+                                    <div className="bg-white rounded-lg p-4 border">
+                                        <h5 className="font-weight-bold mb-3">Customer Ratings & Reviews</h5>
+                                        <div className="p-3 mb-3 rounded bg-light border">
+                                            <div className="d-flex align-items-center mb-1">
+                                                <b className="mr-2">Sarah Jenkins</b>
+                                                <span className="text-warning small mr-2">
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                </span>
+                                                <small className="text-muted ml-auto">2 days ago</small>
                                             </div>
+                                            <p className="small text-muted mb-0">
+                                                "The smash burger was incredible! Super juicy patties and arrived hot in 20 minutes."
+                                            </p>
                                         </div>
-                                    }
-                                    {tab2Content && <div className="row review-section">
-                                        <div className="col-12 bg-white p-4">
-                                            <h5>Customer Reviews For {resDetails.userName}</h5>
-                                            <div className="row p-5">
-                                                <div className="col-6 text-right">
-                                                    <img alt="Review Icon" src={require("../assets/images/icon-review.png")} />
-                                                </div>
-                                                <div className="col-6 pl-0">
-                                                    <p className="mb-0"><strong>Write your own reviews</strong></p>
-                                                    <small className="text-danger">Only customers can write reviews</small>
-                                                </div>
+
+                                        <div className="p-3 rounded bg-light border">
+                                            <div className="d-flex align-items-center mb-1">
+                                                <b className="mr-2">David Miller</b>
+                                                <span className="text-warning small mr-2">
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                    <FontAwesomeIcon icon="star" />
+                                                </span>
+                                                <small className="text-muted ml-auto">1 week ago</small>
+                                            </div>
+                                            <p className="small text-muted mb-0">
+                                                "High quality ingredients, neat packaging, and accurate tracking. Will order again!"
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'info' && (
+                                    <div className="bg-white rounded-lg p-4 border">
+                                        <h5 className="font-weight-bold mb-3">About {resDetails.userName}</h5>
+                                        <p className="text-muted small">
+                                            Fresh artisan meals prepared to order daily. We source our meats, produce, and seasonings locally to ensure maximum freshness and peak flavor.
+                                        </p>
+                                        <hr />
+                                        <div className="row">
+                                            <div className="col-sm-6 mb-2">
+                                                <b className="small text-dark">Operating Hours:</b>
+                                                <p className="small text-muted mb-0">11:00 AM – 11:30 PM (Mon–Sun)</p>
+                                            </div>
+                                            <div className="col-sm-6 mb-2">
+                                                <b className="small text-dark">Hygiene & Safety:</b>
+                                                <p className="small text-muted mb-0">100% Contactless Delivery, Sealed Packaging</p>
                                             </div>
                                         </div>
                                     </div>
-                                    }
-                                    {tab3Content && <div className="row info-section">
-                                        <div className="col-12 bg-white p-4">
-                                            <h5>Overview {resDetails.userName}</h5>
-                                            <p>Base prepared fresh daily. Extra toppings are available in choose extra
-                                                Choose you sauce: Go for BBQ sauce or piri piri sauce on your pizza base for no extra cost.
-                                                Choose your cut: Triangular, square, fingers or Un cut on any size pizza</p>
-                                        </div>
+                                )}
+                            </section>
+
+                            {/* Right Cart Sidebar */}
+                            <aside className="col-lg-4 col-12">
+                                <div className="filter-card position-sticky" style={{ top: '90px' }}>
+                                    <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                                        <h6 className="font-weight-bold mb-0">
+                                            <FontAwesomeIcon icon="shopping-bag" className="mr-2" style={{ color: 'var(--primary)' }} />
+                                            Your Order Basket
+                                        </h6>
+                                        <span className="badge badge-pill badge-danger">{cartItemsList.length} items</span>
                                     </div>
-                                    }
-                                </div>
-                            </div>
-                            <div className="col-lg-3 col-md-3 col-sm-12">
-                                <div className="container bg-white py-3 order-card">
-                                    <h6 className="border-bottom pb-2 mb-3"><FontAwesomeIcon icon="shopping-basket" className="mr-2" />Your Order</h6>
-                                    {cartItemsList.length > 0 ? <div>
+
+                                    {cartItemsList.length === 0 ? (
+                                        <div className="py-4 text-center text-muted">
+                                            <FontAwesomeIcon icon="shopping-basket" className="mb-2" style={{ fontSize: '2rem', opacity: 0.4 }} />
+                                            <p className="small mb-0">Your basket is currently empty.<br />Add items to get started!</p>
+                                        </div>
+                                    ) : (
                                         <div>
-                                            <ul>
-                                                {this._renderCartItemsList()}
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <div className="row ">
-                                                <div className="col-12">
-                                                    <p style={{ backgroundColor: '#f1f3f8', padding: '10px 15px' }}>Total+ <span style={{ float: 'right', color: '#2f313a', fontSize: '14px', fontWeight: 700 }}><em>RS.{totalPrice}</em></span></p>
+                                            <div className="mb-3" style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                                                {cartItemsList.map((cartItem, idx) => (
+                                                    <div className="d-flex justify-content-between align-items-center py-2 border-bottom" key={idx}>
+                                                        <div className="pr-2" style={{ flex: 1 }}>
+                                                            <div className="small font-weight-bold">{cartItem.itemTitle}</div>
+                                                            <div className="small text-muted">RS. {cartItem.itemPrice}</div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => this.removeCartItem(idx)}
+                                                            className="btn btn-sm btn-link text-danger p-0 ml-2"
+                                                            title="Remove item"
+                                                        >
+                                                            <FontAwesomeIcon icon="trash-alt" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Promo Code Input */}
+                                            <form onSubmit={this.applyPromoCode} className="d-flex mb-3">
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-sm"
+                                                    placeholder="Promo Code (e.g. QUICKFOOD20)"
+                                                    value={promoCode}
+                                                    onChange={(e) => this.setState({ promoCode: e.target.value })}
+                                                    style={{ borderRadius: '6px 0 0 6px', textTransform: 'uppercase' }}
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-sm btn-dark px-3 font-weight-bold"
+                                                    style={{ borderRadius: '0 6px 6px 0' }}
+                                                >
+                                                    Apply
+                                                </button>
+                                            </form>
+
+                                            {/* Price Breakdown */}
+                                            <div className="small text-muted mb-3">
+                                                <div className="d-flex justify-content-between mb-1">
+                                                    <span>Subtotal:</span>
+                                                    <span>RS. {totalPrice}</span>
+                                                </div>
+                                                {discountAmount > 0 && (
+                                                    <div className="d-flex justify-content-between text-success mb-1">
+                                                        <span>Coupon Discount:</span>
+                                                        <span>- RS. {discountAmount}</span>
+                                                    </div>
+                                                )}
+                                                <div className="d-flex justify-content-between mb-1">
+                                                    <span>Delivery Fee:</span>
+                                                    <span>{activeDeliveryFee === 0 ? <b className="text-success">FREE</b> : `RS. ${activeDeliveryFee}`}</span>
+                                                </div>
+                                                <hr className="my-2" />
+                                                <div className="d-flex justify-content-between font-weight-bold text-dark" style={{ fontSize: '1.05rem' }}>
+                                                    <span>Total Amount:</span>
+                                                    <span style={{ color: 'var(--primary)' }}>RS. {finalNetTotal}</span>
                                                 </div>
                                             </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={this.handleConfirmOrderBtn}
+                                                className="btn btn-warning btn-block py-2 font-weight-bold text-uppercase"
+                                            >
+                                                Place Order (RS. {finalNetTotal})
+                                            </button>
                                         </div>
-                                    </div> : <p className="text-success">There are no items in your basket.</p>}
-                                    <div>
-                                        <div className="row ">
-                                            <div className="col-12">
-                                                <button onClick={() => this.handleConfirmOrderBtn()} type="button" className="btn btn-warning btn-sm btn-block text-uppercase mr-2 mr-1 px-3"><b>Confirm Order</b></button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
-                            </div>
+                            </aside>
                         </div>
                     </div>
-                </div>
+                </main>
+
                 <Footer />
-            </div >
+            </div>
         );
     }
 }
 
-const mapStateToProps = state => {
-    return {
-        user: state.user,
-    }
-}
+const mapStateToProps = state => ({
+    user: state.user,
+});
 
-export default connect(mapStateToProps, null)(RestaurantDetails);
+export default connect(mapStateToProps, null)(RestaurantDetails);

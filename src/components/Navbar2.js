@@ -1,151 +1,168 @@
 import React, { Component } from 'react';
-import 'bootstrap/dist/css/bootstrap.css'
-import { Link } from 'react-router-dom';
+import { Link, withRouter } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { update_user, remove_user } from '../store/action';
-import { Navbar } from 'react-bootstrap'
-// import { logOut, } from '../config/firebase';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 class Navbar2 extends Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props);
         this.state = {
-            homeIconLink: '/'
-        }
-        this._renderWithLogin = this._renderWithLogin.bind(this);
+            isNavOpen: false,
+        };
+        this.handleLogOut = this.handleLogOut.bind(this);
+        this.toggleNav = this.toggleNav.bind(this);
     }
 
-    async componentDidMount() {
+    componentDidMount() {
         this.props.update_user();
-        if (this.props.user) {
+    }
+
+    handleLogOut() {
+        this.props.remove_user();
+        if (this.props.history) {
+            this.props.history.push('/');
         }
     }
 
-    static getDerivedStateFromProps(props) {
-        if (props.user) {
-            if (props.user.isRestaurant) {
-                return {
-                    updated_user: props.user,
-                    homeIconLink: '/order-requests',
-                }
-            } else {
-                return {
-                    updated_user: props.user,
-                }
-            }
-        } else {
-            return {
-                updated_user: {
-                    isLogin: false,
-                }
-            }
+    toggleNav() {
+        this.setState(prevState => ({ isNavOpen: !prevState.isNavOpen }));
+    }
+
+    renderUserMenu(user) {
+        if (!user || !user.isLogin) {
+            return (
+                <ul className="navbar-nav ml-auto align-items-center">
+                    <li className="nav-item">
+                        <Link className="nav-link px-3" to="/restaurants">
+                            <FontAwesomeIcon icon="utensils" className="mr-2" style={{ color: 'var(--primary)' }} />
+                            Explore Restaurants
+                        </Link>
+                    </li>
+                    <li className="nav-item">
+                        <Link className="nav-link px-3" to="/login">
+                            Sign In
+                        </Link>
+                    </li>
+                    <li className="nav-item ml-lg-2 mt-2 mt-lg-0">
+                        <Link to="/register-restaurant" className="btn btn-warning btn-sm px-3 py-2 text-white font-weight-bold">
+                            Partner with Us
+                        </Link>
+                    </li>
+                </ul>
+            );
         }
-    }
 
-    handleLogOutBtn() {
-        this.props.remove_user()
-        // console.log(this.props.history)
-        this.props.history.push('/')
-    }
+        const isRestaurant = user.isRestaurant;
+        const initial = (user.userName && user.userName.charAt(0).toUpperCase()) || 'U';
 
-    _renderWithOutLogin() {
+        if (isRestaurant) {
+            return (
+                <ul className="navbar-nav ml-auto align-items-center">
+                    <li className="nav-item">
+                        <Link className="nav-link px-3" to="/order-requests">
+                            <FontAwesomeIcon icon="tasks" className="mr-2" />
+                            Order Requests
+                        </Link>
+                    </li>
+                    <li className="nav-item">
+                        <Link className="nav-link px-3" to="/my-foods">
+                            <FontAwesomeIcon icon="utensils" className="mr-2" />
+                            My Menu
+                        </Link>
+                    </li>
+                    <li className="nav-item">
+                        <Link className="nav-link px-3" to="/add-menu-items">
+                            <FontAwesomeIcon icon="plus" className="mr-2" />
+                            Add Dish
+                        </Link>
+                    </li>
+                    <li className="nav-item ml-lg-2">
+                        <div className="nav-user-badge">
+                            <span className="nav-avatar-circle">{initial}</span>
+                            <span>{user.userName}</span>
+                        </div>
+                    </li>
+                    <li className="nav-item ml-lg-2 mt-2 mt-lg-0">
+                        <button type="button" onClick={this.handleLogOut} className="btn btn-outline-light btn-sm px-3 py-2">
+                            Log Out
+                        </button>
+                    </li>
+                </ul>
+            );
+        }
+
         return (
-            <ul className="navbar-nav ml-auto">
+            <ul className="navbar-nav ml-auto align-items-center">
                 <li className="nav-item">
-                    <span className="nav-link active text-uppercase mr-2"><Link to="/restaurants">Restaurants</Link></span>
-                </li>
-                <li className="nav-item">
-                    <span className="nav-link text-uppercase mr-2"><Link to="/login">Login / Register</Link></span>
-                </li>
-                <li className="nav-item">
-                    <Link to="/register-restaurant">
-                        <button type="button" className="btn btn-warning btn-sm text-uppercase mr-2 mr-1 px-3">Register Restaurant</button>
+                    <Link className="nav-link px-3" to="/restaurants">
+                        <FontAwesomeIcon icon="search" className="mr-2" />
+                        Find Food
                     </Link>
                 </li>
+                <li className="nav-item">
+                    <Link className="nav-link px-3" to="/my-orders">
+                        <FontAwesomeIcon icon="shopping-basket" className="mr-2" />
+                        My Orders
+                    </Link>
+                </li>
+                <li className="nav-item ml-lg-2">
+                    <div className="nav-user-badge">
+                        <span className="nav-avatar-circle">{initial}</span>
+                        <span>{user.userName}</span>
+                    </div>
+                </li>
+                <li className="nav-item ml-lg-2 mt-2 mt-lg-0">
+                    <button type="button" onClick={this.handleLogOut} className="btn btn-outline-light btn-sm px-3 py-2">
+                        Log Out
+                    </button>
+                </li>
             </ul>
-        )
-    }
-
-    _renderWithLogin() {
-        const { updated_user } = this.state
-        if (updated_user.isRestaurant) {
-            return (
-                <ul className="navbar-nav ml-auto">
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2"><Link to="/add-menu-items">Add Foods</Link></span>
-                    </li>
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2"><Link to="/my-foods">My Foods</Link></span>
-                    </li>
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2"><Link to="/order-requests">Order Requests</Link></span>
-                    </li>
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2">{updated_user.userName}</span>
-                    </li>
-                    <li className="nav-item">
-                        <button type="button" className="btn btn-warning btn-sm text-uppercase mr-2 mr-1 px-3" onClick={() => this.handleLogOutBtn()}>Log Out</button>
-                    </li>
-                </ul>
-            )
-        } else {
-            return (
-                <ul className="navbar-nav ml-auto">
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2"><Link to="/restaurants">Restaurants</Link></span>
-                    </li>
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2"><Link to="/my-orders">My Orders</Link></span>
-                    </li>
-                    <li className="nav-item">
-                        <span className="nav-link active text-uppercase mr-2">{updated_user.userName}</span>
-                    </li>
-                    <li className="nav-item">
-                        <button type="button" className="btn btn-warning btn-sm text-uppercase mr-2 mr-1 px-3" onClick={() => this.handleLogOutBtn()}>Log Out</button>
-                    </li>
-                </ul>
-            )
-        }
+        );
     }
 
     render() {
-        const { updated_user, homeIconLink } = this.state
+        const { user } = this.props;
+        const { isNavOpen } = this.state;
+        const homeLink = user && user.isRestaurant ? '/order-requests' : '/';
+
         return (
-            // Navbar
-            <Navbar variant="dark" expand="lg">
+            <header className="site-navbar">
+                <div className="container">
+                    <nav className="navbar navbar-expand-lg navbar-dark p-0">
+                        <Link className="navbar-brand d-flex align-items-center" to={homeLink}>
+                            <img alt="Quick Food Logo" src={require("../assets/images/logo.png")} />
+                        </Link>
 
-                {/* Brand image */}
-                <Navbar.Brand >
-                    <Link className="navbar-brand" to={homeIconLink}>
-                        <img alt="Quick Food Logo" src={require("../assets/images/logo.png")} />
-                    </Link>
-                </Navbar.Brand>
+                        <button
+                            className="navbar-toggler border-0"
+                            type="button"
+                            onClick={this.toggleNav}
+                            aria-label="Toggle navigation"
+                        >
+                            <span className="navbar-toggler-icon"></span>
+                        </button>
 
-                {/* Collapse button */}
-                <Navbar.Toggle aria-controls="basic-navbar-nav" />
-
-                {/* Navbar Links */}
-                <Navbar.Collapse id="basic-navbar-nav">
-                    {updated_user.isLogin ? this._renderWithLogin() : this._renderWithOutLogin()}
-                </Navbar.Collapse>
-
-            </Navbar>
+                        <div className={`collapse navbar-collapse ${isNavOpen ? 'show mt-3 mt-lg-0' : ''}`} id="siteNavbarContent">
+                            {this.renderUserMenu(user)}
+                        </div>
+                    </nav>
+                </div>
+            </header>
         );
     }
 }
 
-const mapStateToProps = state => {
-    return {
-        user: state.user,
-    }
-}
+const mapStateToProps = state => ({
+    user: state.user,
+});
 
-const mapDispatchToProps = dispatch => {
-    return {
-        update_user: () => dispatch(update_user()),
-        remove_user: () => dispatch(remove_user())
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    update_user: () => dispatch(update_user()),
+    remove_user: () => dispatch(remove_user()),
+});
 
-export default connect(mapStateToProps, mapDispatchToProps)(Navbar2);
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Navbar2));
+
+
 

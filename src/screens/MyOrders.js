@@ -1,311 +1,299 @@
 import React, { Component } from 'react';
-// import Navbar from '../components/Navbar';
 import Navbar2 from '../components/Navbar2';
 import Footer from '../components/Footer';
-// import firebase from '../config/firebase';
 import { connect } from 'react-redux';
 import { my_order } from '../store/action';
-
-import 'bootstrap/dist/css/bootstrap.css';
-import '../App.css'
-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
+const SAMPLE_CUSTOMER_ORDERS = [
+    {
+        id: "demo-order-101",
+        userName: "Gourmet Burger Bar",
+        status: "IN PROGRESS",
+        createdAt: "Today, 12:15 PM",
+        totalPrice: 1390,
+        itemsList: [
+            {
+                itemTitle: "Signature Double Smash Burger",
+                itemIngredients: "Two 100% prime beef patties, aged cheddar, truffle aioli",
+                itemPrice: "650",
+                itemImageUrl: require("../assets/images/listing-logo03.png")
+            },
+            {
+                itemTitle: "Crispy Peri Peri Chicken Roast",
+                itemIngredients: "Flame grilled chicken with peri-peri glaze & fries",
+                itemPrice: "740",
+                itemImageUrl: require("../assets/images/listing-logo15.png")
+            }
+        ]
+    },
+    {
+        id: "demo-order-100",
+        userName: "Bella Italia Pizzeria",
+        status: "DELIVERED",
+        createdAt: "Yesterday, 8:40 PM",
+        totalPrice: 980,
+        itemsList: [
+            {
+                itemTitle: "Truffle & Wild Mushroom Pizza",
+                itemIngredients: "Sourdough crust, buffalo mozzarella, wild mushrooms",
+                itemPrice: "980",
+                itemImageUrl: require("../assets/images/listing-logo09.png")
+            }
+        ]
+    }
+];
+
 class MyOrders extends Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props);
         this.state = {
-            tab1: "col-12 col-lg-4 col-md-4 text-center order-req-tab-active",
-            tab2: "col-12 col-lg-4 col-md-4 text-center",
-            tab3: "col-12 col-lg-4 col-md-4 text-center",
-            tab1Content: true,
-            tab2Content: false,
-            tab3Content: false,
-        }
+            activeFilter: "ALL",
+        };
     }
 
-    async componentDidMount() {
+    componentDidMount() {
         this.props.my_order();
     }
 
-    static getDerivedStateFromProps(props) {
-        const { user } = props
-        return {
-            userDetails: user,
+    getOrderStepIndex(status) {
+        switch (status) {
+            case "PENDING":
+                return 1;
+            case "IN PROGRESS":
+                return 2;
+            case "OUT_FOR_DELIVERY":
+                return 3;
+            case "DELIVERED":
+                return 4;
+            default:
+                return 1;
         }
     }
 
-    handleTabs(e) {
-        if (e === "tab1") {
-            this.setState({
-                tab1: "col-12 col-lg-4 col-md-4 text-center order-req-tab-active",
-                tab2: "col-12 col-lg-4 col-md-4 text-center",
-                tab3: "col-12 col-lg-4 col-md-4 text-center",
-                tab1Content: true,
-                tab2Content: false,
-                tab3Content: false,
-            })
-        } else if (e === "tab2") {
-            this.setState({
-                tab1: "col-12 col-lg-4 col-md-4 text-center",
-                tab2: "col-12 col-lg-4 col-md-4 text-center order-req-tab-active",
-                tab3: "col-12 col-lg-4 col-md-4 text-center",
-                tab1Content: false,
-                tab2Content: true,
-                tab3Content: false,
-            })
-        } else if (e === "tab3") {
-            this.setState({
-                tab1: "col-12 col-lg-4 col-md-4 text-center",
-                tab2: "col-12 col-lg-4 col-md-4 text-center",
-                tab3: "col-12 col-lg-4 col-md-4 text-center order-req-tab-active",
-                tab1Content: false,
-                tab2Content: false,
-                tab3Content: true,
-            })
-        }
-    }
+    renderStepper(status) {
+        const step = this.getOrderStepIndex(status);
+        const progressWidth = step === 1 ? '15%' : step === 2 ? '50%' : step === 3 ? '80%' : '100%';
 
-    _renderPendingMyOrder() {
-        const { myOrder } = this.props;
-        // console.log(myOrder)
-        if (myOrder) {
-            return Object.keys(myOrder).map((val) => {
-                const userUid = myOrder[val].userUid;
-                const orderId = myOrder[val].id;
-                if (myOrder[val].status === "PENDING") {
-                    return (
-                        <div className="container border-bottom pb-2 px-lg-0 px-md-0 mb-4" key={myOrder[val].id}>
-                            <div className="row mb-3">
-                                <div className="col-lg-6 col-md-6 col-12">
-                                    <h5 className="">{myOrder[val].userName}</h5>
-                                </div>
-                                <div className="col-lg-6 col-md-6 col-12 text-lg-right text-md-right text-center ">
-                                    <span className="text-uppercase text-danger order-req-status">{myOrder[val].status}</span>
-                                </div>
-                            </div>
-                            {
-                                Object.keys(myOrder[val].itemsList).map((val2) => {
-                                    // console.log(myOrder[val].itemsList[val2])
-                                    // console.log(val2)
-                                    return (
-                                        <div className="row mb-3" key={val2}>
-                                            <div className="col-lg-2 col-md-3 col-8 offset-2 offset-lg-0 offset-md-0 px-0 mb-3 text-center">
-                                                <img style={{ width: "70px", height: "70px" }} alt="Natural Healthy Food" src={myOrder[val].itemsList[val2].itemImageUrl} />
-                                            </div>
-                                            <div className="col-lg-7 col-md-6 col-sm-12 px-0">
-                                                <h6 className="">{myOrder[val].itemsList[val2].itemTitle}</h6>
-                                                <p className="mb-1"><small>{myOrder[val].itemsList[val2].itemIngredients}</small></p>
-                                            </div>
-                                            <div className="col-lg-3 col-md-3 col-sm-12 px-0 text-right">
-                                                <span style={{ fontSize: "14px" }} className="mx-3"><b>RS.{myOrder[val].itemsList[val2].itemPrice}</b></span>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            }
-                            <div className="row mb-3 mb-md-0 mb-lg-0">
-                                <div className="col-lg-6 col-md-6 col-12 order-lg-first order-md-first order-last ">
-                                </div>
-                                <div className="col-lg-6 col-md-6 col-12 text-lg-right text-md-right">
-                                    <p><b className="mr-4">Total Price:</b><span style={{ fontSize: '1.1rem' }}>RS.{myOrder[val].totalPrice}</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
-            })
-        }
-    }
+        return (
+            <div className="stepper-track">
+                <div className="stepper-track-progress" style={{ width: progressWidth }}></div>
 
-    _renderInProgressMyOrder() {
-        const { myOrder } = this.props;
-        // console.log(myOrder)
-        if (myOrder) {
-            return Object.keys(myOrder).map((val) => {
-                const userUid = myOrder[val].userUid;
-                const orderId = myOrder[val].id;
-                if (myOrder[val].status === "IN PROGRESS") {
-                    return (
-                        <div className="container border-bottom pb-2 px-lg-0 px-md-0 mb-4" key={myOrder[val].id}>
-                            <div className="row mb-3">
-                                <div className="col-lg-6 col-md-6 col-12">
-                                    <h5 className="">{myOrder[val].userName}</h5>
-                                </div>
-                                <div className="col-lg-6 col-md-6 col-12 text-lg-right text-md-right text-center ">
-                                    <span className="text-uppercase text-danger order-req-status">{myOrder[val].status}</span>
-                                </div>
-                            </div>
-                            {
-                                Object.keys(myOrder[val].itemsList).map((val2) => {
-                                    // console.log(myOrder[val].itemsList[val2])
-                                    // console.log(val2)
-                                    return (
-                                        <div className="row mb-3" key={val2}>
-                                            <div className="col-lg-2 col-md-3 col-8 offset-2 offset-lg-0 offset-md-0 px-0 mb-3 text-center">
-                                                <img style={{ width: "70px", height: "70px" }} alt="Natural Healthy Food" src={myOrder[val].itemsList[val2].itemImageUrl} />
-                                            </div>
-                                            <div className="col-lg-7 col-md-6 col-sm-12 px-0">
-                                                <h6 className="">{myOrder[val].itemsList[val2].itemTitle}</h6>
-                                                <p className="mb-1"><small>{myOrder[val].itemsList[val2].itemIngredients}</small></p>
-                                            </div>
-                                            <div className="col-lg-3 col-md-3 col-sm-12 px-0 text-right">
-                                                <span style={{ fontSize: "14px" }} className="mx-3"><b>RS.{myOrder[val].itemsList[val2].itemPrice}</b></span>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            }
-                            <div className="row mb-3 mb-md-0 mb-lg-0">
-                                <div className="col-lg-6 col-md-6 col-12 order-lg-first order-md-first order-last ">
-                                </div>
-                                <div className="col-lg-6 col-md-6 col-12 text-lg-right text-md-right">
-                                    <p><b className="mr-4">Total Price:</b><span style={{ fontSize: '1.1rem' }}>RS.{myOrder[val].totalPrice}</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
-            })
-        }
-    }
+                <div className={`stepper-step ${step >= 1 ? (step === 1 ? 'active' : 'completed') : ''}`}>
+                    <div className="stepper-icon">
+                        <FontAwesomeIcon icon={step > 1 ? "check" : "file-alt"} />
+                    </div>
+                    <span className="stepper-label">Order Placed</span>
+                </div>
 
-    _renderDeliveredMyOrder() {
-        const { myOrder } = this.props;
-        // console.log(myOrder)
-        if (myOrder) {
-            return Object.keys(myOrder).map((val) => {
-                if (myOrder[val].status === "DELIVERED") {
-                    return (
-                        <div className="container border-bottom pb-2 px-lg-0 px-md-0 mb-4" key={myOrder[val].id}>
-                            <div className="row mb-3">
-                                <div className="col-lg-6 col-md-6 col-12">
-                                    <h5 className="">{myOrder[val].userName}</h5>
-                                </div>
-                                <div className="col-lg-6 col-md-6 col-12 text-lg-right text-md-right text-center ">
-                                    <span className="text-uppercase text-success order-req-status">{myOrder[val].status}</span>
-                                    {/* <span className="text-uppercase text-success order-req-status">{orderRequest[val].status}</span> */}
-                                </div>
-                            </div>
-                            {
-                                Object.keys(myOrder[val].itemsList).map((val2) => {
-                                    // console.log(myOrder[val].itemsList[val2])
-                                    // console.log(val2)
-                                    return (
-                                        <div className="row mb-3" key={val2}>
-                                            <div className="col-lg-2 col-md-3 col-8 offset-2 offset-lg-0 offset-md-0 px-0 mb-3 text-center">
-                                                <img style={{ width: "70px", height: "70px" }} alt="Natural Healthy Food" src={myOrder[val].itemsList[val2].itemImageUrl} />
-                                            </div>
-                                            <div className="col-lg-7 col-md-6 col-sm-12 px-0">
-                                                <h6 className="">{myOrder[val].itemsList[val2].itemTitle}</h6>
-                                                <p className="mb-1"><small>{myOrder[val].itemsList[val2].itemIngredients}</small></p>
-                                            </div>
-                                            <div className="col-lg-3 col-md-3 col-sm-12 px-0 text-right">
-                                                <span style={{ fontSize: "14px" }} className="mx-3"><b>RS.{myOrder[val].itemsList[val2].itemPrice}</b></span>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            }
-                            <div className="row mb-3 mb-md-0 mb-lg-0">
-                                <div className="col-lg-6 col-md-6 col-12 order-lg-first order-md-first order-last ">
-                                    <h6 style={{ fontSize: '15px' }} className="text-success">This order is successfully delivered</h6>
-                                </div>
-                                <div className="col-lg-6 col-md-6 col-12 text-lg-right text-md-right">
-                                    <p><b className="mr-4">Total Price:</b><span style={{ fontSize: '1.1rem' }}>RS.{myOrder[val].totalPrice}</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
-            })
-        }
+                <div className={`stepper-step ${step >= 2 ? (step === 2 ? 'active' : 'completed') : ''}`}>
+                    <div className="stepper-icon">
+                        <FontAwesomeIcon icon={step > 2 ? "check" : "fire"} />
+                    </div>
+                    <span className="stepper-label">Kitchen Preparing</span>
+                </div>
+
+                <div className={`stepper-step ${step >= 3 ? (step === 3 ? 'active' : 'completed') : ''}`}>
+                    <div className="stepper-icon">
+                        <FontAwesomeIcon icon={step > 3 ? "check" : "motorcycle"} />
+                    </div>
+                    <span className="stepper-label">Out for Delivery</span>
+                </div>
+
+                <div className={`stepper-step ${step >= 4 ? 'completed' : ''}`}>
+                    <div className="stepper-icon">
+                        <FontAwesomeIcon icon={step >= 4 ? "check" : "home"} />
+                    </div>
+                    <span className="stepper-label">Delivered</span>
+                </div>
+            </div>
+        );
     }
 
     render() {
-        const { tab1, tab2, tab3, tab1Content, tab2Content, tab3Content, userDetails } = this.state;
+        const { myOrder } = this.props;
+        const { activeFilter } = this.state;
+
+        // Use real orders if present, otherwise sample orders for realistic preview
+        let ordersList = [];
+        if (myOrder && Object.keys(myOrder).length > 0) {
+            ordersList = Object.keys(myOrder).map(key => ({ id: key, ...myOrder[key] }));
+        } else {
+            ordersList = SAMPLE_CUSTOMER_ORDERS;
+        }
+
+        // Apply active tab filter
+        if (activeFilter === "IN_PROGRESS") {
+            ordersList = ordersList.filter(o => o.status === "PENDING" || o.status === "IN PROGRESS");
+        } else if (activeFilter === "DELIVERED") {
+            ordersList = ordersList.filter(o => o.status === "DELIVERED");
+        }
+
         return (
-            <div>
-                <div className="container-fluid res-details-cont1">
-                    <div className="">
-                        {/* <Navbar history={this.props.history} /> */}
-                        <Navbar2 history={this.props.history} />
-                        <div className="container px-0 res-details-cont1-text mx-0">
-                            <div className="container">
-                                {
-                                    userDetails ? <div className="row">
-                                        <div className="col-lg-2 col-md-3 col-6 text-lg-center text-md-center pr-0 mb-2">
-                                            <img className="p-2 bg-white rounded text-center" alt="Natural Healthy Food" style={{ width: "60%" }} src={userDetails.userProfileImageUrl} />
-                                        </div>
-                                        <div className="col-lg-10 col-md-9 col-12 pl-lg-0 pl-md-0">
-                                            <h1 className="restaurant-title">{userDetails.userName}</h1>
-                                            {/* <p className="restaurant-text">{userDetails.typeOfFood.join(', ')}</p> */}
-                                        </div>
-                                    </div> : null
-                                }
+            <div className="d-flex flex-column min-vh-100">
+                <Navbar2 history={this.props.history} />
+
+                {/* Subheader */}
+                <section className="py-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#fff' }}>
+                    <div className="container">
+                        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                            <div>
+                                <span className="hero-pill mb-2">
+                                    <FontAwesomeIcon icon="shopping-bag" className="mr-2" style={{ color: 'var(--primary)' }} />
+                                    Live Order Tracking
+                                </span>
+                                <h1 className="text-white font-weight-bold mb-1" style={{ fontSize: '2.2rem' }}>
+                                    My Orders
+                                </h1>
+                                <p className="text-muted mb-0">
+                                    Track real-time kitchen progress, delivery driver location, and past order receipts.
+                                </p>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={() => this.props.history.push('/restaurants')}
+                                className="btn btn-warning mt-3 mt-md-0 px-4 py-2 font-weight-bold"
+                            >
+                                Order More Food
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div style={{ background: "#EBEDF3" }} className="container-fluid py-5">
+                </section>
+
+                {/* Main Content Area */}
+                <main className="py-5 flex-grow-1" style={{ background: 'var(--bg-page)' }}>
                     <div className="container">
-                        <div className="row">
-                            <div className="col-lg-10 col-md-10 col-sm-12 offset-lg-1 offset-md-1">
-                                <div className="container">
-                                    <div className="row">
-                                        <div className={tab1} onClick={() => this.handleTabs("tab1")}>
-                                            <p className="order-req-tab-text"><FontAwesomeIcon icon="spinner" className="mr-3" />Pending</p>
-                                        </div>
-                                        <div className={tab2} onClick={() => this.handleTabs("tab2")}>
-                                            <p className="order-req-tab-text"><FontAwesomeIcon icon="truck" className="mr-3" />In Progress</p>
-                                        </div>
-                                        <div className={tab3} onClick={() => this.handleTabs("tab3")}>
-                                            <p className="order-req-tab-text"><FontAwesomeIcon icon="tasks" className="mr-3" />Delivered</p>
-                                        </div>
-                                    </div>
-                                    {tab1Content &&
-                                        < div className="row pending-order-section">
-                                            <div className="col-12 bg-white p-4">
-                                                {this._renderPendingMyOrder()}              
+                        {/* Status Filter Tabs */}
+                        <div className="d-flex gap-2 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => this.setState({ activeFilter: "ALL" })}
+                                className={`btn btn-sm px-4 mr-2 ${activeFilter === "ALL" ? 'btn-warning text-white font-weight-bold' : 'btn-white bg-white border text-muted'}`}
+                                style={{ borderRadius: 'var(--radius-full)' }}
+                            >
+                                All Orders
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => this.setState({ activeFilter: "IN_PROGRESS" })}
+                                className={`btn btn-sm px-4 mr-2 ${activeFilter === "IN_PROGRESS" ? 'btn-warning text-white font-weight-bold' : 'btn-white bg-white border text-muted'}`}
+                                style={{ borderRadius: 'var(--radius-full)' }}
+                            >
+                                Active & In Progress
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => this.setState({ activeFilter: "DELIVERED" })}
+                                className={`btn btn-sm px-4 ${activeFilter === "DELIVERED" ? 'btn-warning text-white font-weight-bold' : 'btn-white bg-white border text-muted'}`}
+                                style={{ borderRadius: 'var(--radius-full)' }}
+                            >
+                                Completed Deliveries
+                            </button>
+                        </div>
+
+                        {/* Order Cards List */}
+                        {ordersList.length === 0 ? (
+                            <div className="bg-white rounded-lg p-5 text-center border">
+                                <FontAwesomeIcon icon="clipboard-list" className="text-muted mb-3" style={{ fontSize: '2.5rem', opacity: 0.4 }} />
+                                <h5 className="font-weight-bold">No orders found</h5>
+                                <p className="text-muted small mb-4">You have no orders in this category yet.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => this.props.history.push('/restaurants')}
+                                    className="btn btn-warning px-4"
+                                >
+                                    Explore Restaurants
+                                </button>
+                            </div>
+                        ) : (
+                            ordersList.map((order) => {
+                                const isDelivered = order.status === "DELIVERED";
+                                const statusBadgeClass = isDelivered ? "badge-tag-success" : "badge-tag-warning";
+                                const items = Array.isArray(order.itemsList) ? order.itemsList : Object.values(order.itemsList || {});
+
+                                return (
+                                    <div className="order-tracker-card" key={order.id}>
+                                        {/* Card Header */}
+                                        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 mb-3">
+                                            <div>
+                                                <div className="d-flex align-items-center gap-2 mb-1">
+                                                    <h5 className="font-weight-bold mb-0 mr-2">{order.userName || 'Restaurant'}</h5>
+                                                    <span className={`badge-tag ${statusBadgeClass}`}>
+                                                        {order.status}
+                                                    </span>
+                                                </div>
+                                                <small className="text-muted">Order ID: #{order.id}</small>
+                                            </div>
+
+                                            <div className="text-md-right mt-2 mt-md-0">
+                                                <div className="small text-muted">Total Amount</div>
+                                                <div className="font-weight-bold" style={{ fontSize: '1.2rem', color: 'var(--primary)' }}>
+                                                    RS. {order.totalPrice}
+                                                </div>
                                             </div>
                                         </div>
-                                    }
-                                    {tab2Content && <div className="row inProgress-order-section">
-                                        <div className="col-12 bg-white p-4">
-                                            {this._renderInProgressMyOrder()}
+
+                                        {/* Visual Progression Stepper */}
+                                        {this.renderStepper(order.status)}
+
+                                        {/* Items Breakdown */}
+                                        <div className="bg-light rounded p-3 mt-4 border">
+                                            <div className="small font-weight-bold text-muted mb-2 text-uppercase">Ordered Items:</div>
+                                            <div className="row">
+                                                {items.map((food, fIdx) => (
+                                                    <div className="col-md-6 col-12 mb-2" key={fIdx}>
+                                                        <div className="d-flex align-items-center">
+                                                            <img
+                                                                alt={food.itemTitle}
+                                                                src={food.itemImageUrl || require("../assets/images/listing-logo03.png")}
+                                                                className="rounded mr-3"
+                                                                style={{ width: '45px', height: '45px', objectFit: 'cover' }}
+                                                            />
+                                                            <div className="mr-auto">
+                                                                <div className="small font-weight-bold">{food.itemTitle}</div>
+                                                                <small className="text-muted">RS. {food.itemPrice}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions Footer */}
+                                        <div className="d-flex justify-content-between align-items-center mt-3 pt-2">
+                                            <small className="text-muted">
+                                                <FontAwesomeIcon icon="info-circle" className="mr-1" />
+                                                Need help with this order? <a href="#/" className="text-primary font-weight-bold ml-1">Contact Support</a>
+                                            </small>
+                                            <button
+                                                type="button"
+                                                onClick={() => this.props.history.push('/restaurants')}
+                                                className="btn btn-outline-custom btn-sm px-3"
+                                            >
+                                                Order Again
+                                            </button>
                                         </div>
                                     </div>
-                                    }
-                                    {tab3Content && <div className="row delivered-order-section">
-                                        <div className="col-12 bg-white p-4">
-                                            {this._renderDeliveredMyOrder()}
-                                        </div>
-                                    </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
+                                );
+                            })
+                        )}
                     </div>
-                </div>
+                </main>
+
                 <Footer />
-            </div >
+            </div>
         );
     }
 }
 
-const mapStateToProps = state => {
-    // console.log("mapStateToProps states =>> ", state);
-    return {
-        user: state.user,
-        myOrder: state.myOrder,
-        // todos: state.todos
-    }
-}
+const mapStateToProps = state => ({
+    myOrder: state.myOrder,
+    user: state.user,
+});
 
-const mapDispatchToProps = dispatch => {
-    return {
-        my_order: () => dispatch(my_order()),
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    my_order: () => dispatch(my_order()),
+});
 
 export default connect(mapStateToProps, mapDispatchToProps)(MyOrders);

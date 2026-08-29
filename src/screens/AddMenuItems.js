@@ -1,204 +1,244 @@
 import React, { Component } from 'react';
-// import Navbar from '../components/Navbar';
 import Navbar2 from '../components/Navbar2';
 import Footer from '../components/Footer';
 import { addItem } from '../config/firebase';
-import Swal from 'sweetalert2'
+import Swal from 'sweetalert2';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-
-import 'bootstrap/dist/css/bootstrap.css';
-import '../App.css'
-
+const FOOD_CATEGORIES = [
+    "Burgers", "Pizza", "Chicken", "Kebabs", "Biryani", "Vegetarian", "Desserts", "Beverages"
+];
 
 export default class AddMenuItems extends Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props);
         this.state = {
-            itemImageLable: "Choose image",
             itemTitle: "",
             itemIngredients: "",
             itemPrice: "",
-            itemImage: "",
-            chooseItemType: "",
-            showError: false,
-            registerFormError: "",
-        }
-        this.handleItemImage = this.handleItemImage.bind(this)
-        this.handleAddYourItemBtn = this.handleAddYourItemBtn.bind(this)
+            itemImage: null,
+            itemImageLabel: "Choose dish photo...",
+            itemImagePreview: null,
+            chooseItemType: "Burgers",
+            isSubmitting: false,
+            errorMessage: "",
+        };
+        this.handleItemImage = this.handleItemImage.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
     }
 
     handleItemImage(e) {
-        if (e.target.files[0] != null) {
+        const file = e.target.files[0];
+        if (file) {
             this.setState({
-                itemImageLable: e.target.files[0].name,
-                itemImage: e.target.files[0]
+                itemImageLabel: file.name,
+                itemImage: file,
+                itemImagePreview: URL.createObjectURL(file)
             });
         } else {
             this.setState({
-                itemImageLable: "Choose image",
-                itemImage: "",
+                itemImageLabel: "Choose dish photo...",
+                itemImage: null,
+                itemImagePreview: null
             });
         }
     }
 
-    async handleAddYourItemBtn() {
-        const { itemTitle, itemIngredients, itemPrice, itemImage, chooseItemType, } = this.state
-        if (!itemTitle) {
-            this.setState({
-                showError: true,
-                registerFormError: "Invalid item title."
-            })
-        } else if (!itemIngredients) {
-            this.setState({
-                showError: true,
-                registerFormError: "Invalid item ingredients."
-            })
-        } else if (!itemPrice) {
-            this.setState({
-                showError: true,
-                registerFormError: "Invalid item price."
-            })
+    async handleSubmit(e) {
+        e.preventDefault();
+        const { itemTitle, itemIngredients, itemPrice, itemImage, chooseItemType } = this.state;
+
+        if (!itemTitle.trim()) {
+            this.setState({ errorMessage: "Please enter the dish title." });
+            return;
         }
-        else if (!itemImage) {
-            this.setState({
-                showError: true,
-                registerFormError: "Image is required."
-            })
+        if (!itemIngredients.trim()) {
+            this.setState({ errorMessage: "Please describe the ingredients or flavor profile." });
+            return;
         }
-        else if (!chooseItemType) {
-            this.setState({
-                showError: true,
-                registerFormError: "Must be selected any one."
-            })
-        } else {
-            this.setState({
-                showError: false,
-                registerFormError: ""
-            })
-            const itemDetails = {
-                itemTitle, itemIngredients, itemPrice, itemImage, chooseItemType, propsHistory: this.props.history,
-            }
-            try {
-                const addItemReturn = await addItem(itemDetails)
-                // console.log(addItemReturn)
-                Swal.fire({
-                    title: 'Success',
-                    text: addItemReturn,
-                    type: 'success',
-                }).then(() => {
-                    this.props.history.push('/my-foods')
-                })
-            } catch (error) {
-                // console.log("Error in add menu items => ", error)
-                Swal.fire({
-                    title: 'Error',
-                    text: error,
-                    type: 'error',
-                })
-            }
+        if (!itemPrice || Number(itemPrice) <= 0) {
+            this.setState({ errorMessage: "Please enter a valid price in RS." });
+            return;
+        }
+        if (!itemImage) {
+            this.setState({ errorMessage: "Please select a photo of the food item." });
+            return;
+        }
+        if (!chooseItemType) {
+            this.setState({ errorMessage: "Please select a food category." });
+            return;
+        }
+
+        this.setState({ isSubmitting: true, errorMessage: "" });
+
+        const itemDetails = {
+            itemTitle: itemTitle.trim(),
+            itemIngredients: itemIngredients.trim(),
+            itemPrice: itemPrice.trim(),
+            itemImage,
+            chooseItemType,
+            propsHistory: this.props.history,
+        };
+
+        try {
+            const addItemReturn = await addItem(itemDetails);
+            Swal.fire({
+                title: 'Dish Added!',
+                text: addItemReturn || 'Your new menu item is now live and orderable.',
+                type: 'success',
+            }).then(() => {
+                this.props.history.push('/my-foods');
+            });
+        } catch (error) {
+            this.setState({ isSubmitting: false });
+            Swal.fire({
+                title: 'Failed to Add Item',
+                text: error ? String(error) : 'Please check your connection and try again.',
+                type: 'error',
+            });
         }
     }
 
     render() {
-        const { itemImageLable, showError, registerFormError } = this.state;
+        const {
+            itemTitle,
+            itemIngredients,
+            itemPrice,
+            itemImageLabel,
+            itemImagePreview,
+            chooseItemType,
+            isSubmitting,
+            errorMessage
+        } = this.state;
+
         return (
-            <div>
-                <div className="container-fluid register-cont1">
-                    <div className="">
-                        {/* <Navbar history={this.props.history} /> */}
-                        <Navbar2 history={this.props.history} />
-                        <div className="container register-cont1-text">
-                            <h1 className="text-uppercase text-white text-center mb-4"><strong>Add Your Best Food Items</strong></h1>
+            <div className="d-flex flex-column min-vh-100">
+                <Navbar2 history={this.props.history} />
+
+                {/* Subheader */}
+                <section className="py-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#fff' }}>
+                    <div className="container text-center">
+                        <span className="hero-pill mb-2">
+                            <FontAwesomeIcon icon="utensils" className="mr-2" style={{ color: 'var(--primary)' }} />
+                            Menu Management
+                        </span>
+                        <h1 className="text-white font-weight-bold mb-1" style={{ fontSize: '2.2rem' }}>
+                            Add New Menu Item
+                        </h1>
+                        <p className="text-muted mb-0" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                            Create appetizing dishes for your online restaurant menu with custom pricing and photos.
+                        </p>
+                    </div>
+                </section>
+
+                {/* Form Section */}
+                <main className="py-5 flex-grow-1" style={{ background: 'var(--bg-page)' }}>
+                    <div className="container">
+                        <div className="row justify-content-center">
+                            <div className="col-lg-8 col-12">
+                                <div className="bg-white rounded-lg p-4 p-md-5 border shadow-sm">
+                                    {errorMessage && (
+                                        <div className="alert alert-danger py-2 mb-4 small" role="alert">
+                                            <FontAwesomeIcon icon="exclamation-circle" className="mr-2" />
+                                            {errorMessage}
+                                        </div>
+                                    )}
+
+                                    <form onSubmit={this.handleSubmit}>
+                                        <div className="form-group mb-3">
+                                            <label className="font-weight-bold small text-muted">DISH / ITEM TITLE</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="e.g. Truffle Smashed Burger"
+                                                value={itemTitle}
+                                                onChange={(e) => this.setState({ itemTitle: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group mb-3">
+                                            <label className="font-weight-bold small text-muted">INGREDIENTS &amp; DESCRIPTION</label>
+                                            <textarea
+                                                className="form-control"
+                                                rows="3"
+                                                placeholder="e.g. Double prime beef patty, aged cheddar, caramelized onions, house truffle aioli on toasted brioche."
+                                                value={itemIngredients}
+                                                onChange={(e) => this.setState({ itemIngredients: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="row mb-3">
+                                            <div className="col-md-6 col-12 mb-3 mb-md-0">
+                                                <label className="font-weight-bold small text-muted">PRICE (RS.)</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control"
+                                                    placeholder="e.g. 650"
+                                                    value={itemPrice}
+                                                    onChange={(e) => this.setState({ itemPrice: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="col-md-6 col-12">
+                                                <label className="font-weight-bold small text-muted">CATEGORY</label>
+                                                <select
+                                                    className="form-control"
+                                                    value={chooseItemType}
+                                                    onChange={(e) => this.setState({ chooseItemType: e.target.value })}
+                                                >
+                                                    {FOOD_CATEGORIES.map((cat, idx) => (
+                                                        <option key={idx} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group mb-4">
+                                            <label className="font-weight-bold small text-muted">DISH PHOTO</label>
+                                            <div className="custom-file">
+                                                <input
+                                                    type="file"
+                                                    className="custom-file-input"
+                                                    id="foodPhotoUpload"
+                                                    accept="image/*"
+                                                    onChange={this.handleItemImage}
+                                                />
+                                                <label className="custom-file-label" htmlFor="foodPhotoUpload">
+                                                    {itemImageLabel}
+                                                </label>
+                                            </div>
+
+                                            {itemImagePreview && (
+                                                <div className="mt-3 text-center">
+                                                    <img
+                                                        src={itemImagePreview}
+                                                        alt="Dish Preview"
+                                                        className="rounded border shadow-sm"
+                                                        style={{ width: '140px', height: '140px', objectFit: 'cover' }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="btn btn-warning btn-block py-2 font-weight-bold text-uppercase"
+                                        >
+                                            {isSubmitting ? 'Publishing Item...' : 'Publish Food Item'}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="container-fluid py-5 bg-light">
-                    <div className="col-lg-6 col-md-6 col-sm-12 mx-auto bg-white shadow p-4">
-                        <h2 className="text-center mb-4">Add Menu Items</h2>
-                        <form action="javascript:void(0)">
-                            <div className="form-row">
-                                <div className="form-group col-md-6">
-                                    <label htmlFor="itemTitle"><b>Item Title</b></label>
-                                    <input type="text" className="form-control" id="itemTitle" placeholder="Full name of dish" onChange={(e) => this.setState({ itemTitle: e.target.value })} />
-                                </div>
-                                <div className="form-group col-md-6">
-                                    <label htmlFor="itemIngredients"><b>Item Ingredients</b></label>
-                                    <input type="text" className="form-control" id="itemIngredients" placeholder="Item Ingredients Name" onChange={(e) => this.setState({ itemIngredients: e.target.value })} />
-                                </div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group col-md-6">
-                                    <label htmlFor="itemPrice"><b>Price</b></label>
-                                    <input type="number" className="form-control" id="itemPrice" placeholder="Price in number" onChange={(e) => this.setState({ itemPrice: e.target.value })} />
-                                </div>
-                                <div className="form-group col-md-6">
-                                    <label className="mb-2"><b>Item Image</b></label>
-                                    <div className="custom-file">
-                                        <input type="file" className="custom-file-input" id="itemImage" onChange={this.handleItemImage} />
-                                        <label className="custom-file-label" htmlFor="itemImage">{itemImageLable}</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <label className="mb-2"><b>Choose Item Type</b></label>
-                            <div className="form-row">
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="kebabs" value="kebabs" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="kebabs">Kebabs</label>
-                                    </div>
-                                </div>
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="chicken" value="chicken" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="chicken">Chicken</label>
-                                    </div>
-                                </div>
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="burgers" value="burgers" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="burgers">Burgers</label>
-                                    </div>
-                                </div>
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="biryani" value="biryani" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="biryani">Biryani</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="sauces" value="sauces" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="sauces">Sauces</label>
-                                    </div>
-                                </div>
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="vegetarian" value="vegetarian" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="vegetarian">Vegetarian</label>
-                                    </div>
-                                </div>
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="bread" value="bread" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="bread">Bread</label>
-                                    </div>
-                                </div>
-                                <div className="form-group col-md-3">
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" className="custom-control-input" id="specials" value="specials" name="chooseItemType" onChange={(e) => this.setState({ chooseItemType: e.target.value })} />
-                                        <label className="custom-control-label" htmlFor="specials">Specials</label>
-                                    </div>
-                                </div>
-                            </div>
-                            {showError ? <p className="text-danger">{registerFormError}</p> : null}
-                            <button type="submit" className="btn btn-warning text-uppercase mb-3" onClick={this.handleAddYourItemBtn} ><b>Add your item</b></button>
-                        </form>
-                    </div>
-                </div>
+                </main>
+
                 <Footer />
             </div>
         );
     }
-}
+}
